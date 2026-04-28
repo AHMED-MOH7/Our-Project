@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DMBI Quiz — Dr. Mahmoud Mounir</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f13;
+    --surface: #16181f;
+    --border: #2a2d38;
+    --accent: #f0c040;
+    --accent2: #4fc3f7;
+    --accent3: #a5d6a7;
+    --danger: #ef5350;
+    --text: #e8eaf0;
+    --muted: #7a7f96;
+    --radius: 10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 80px;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #1a1c25 0%, #0e0f13 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 36px 40px 28px;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .header-left h1 {
+    font-size: clamp(1.2rem, 3vw, 1.7rem);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+  .header-left p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-top: 4px;
+  }
+  .score-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 20px;
+    text-align: center;
+    display: none;
+  }
+  .score-display .score-num {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .score-display .score-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar-wrap {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+  }
+  .progress-bar-inner {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 0;
+  }
+  .progress-bar-bg {
+    flex: 1; height: 6px; background: var(--border);
+    border-radius: 99px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+  .progress-text {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* TABS */
+  .tabs-wrap {
+    padding: 24px 40px 0;
+  }
+  .tabs {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .tab-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tab-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0e0f13;
+    font-weight: 600;
+  }
+
+  /* LECTURE SECTIONS */
+  .lecture-section { display: none; padding: 28px 40px; }
+  .lecture-section.active { display: block; }
+
+  .lecture-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 28px;
+  }
+  .lecture-badge {
+    background: var(--accent);
+    color: #0e0f13;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .lecture-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .lecture-subtitle {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-top: 2px;
+  }
+
+  /* QUESTION CARD */
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 26px;
+    margin-bottom: 18px;
+    transition: border-color 0.2s;
+  }
+  .question-card.answered-correct { border-color: var(--accent3); }
+  .question-card.answered-wrong { border-color: var(--danger); }
+
+  .question-top {
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-bottom: 18px;
+  }
+  .q-num {
+    background: var(--border);
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .q-text {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .option-label {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: #1e2029;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.18s;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .option-label:hover { border-color: var(--accent2); background: #22253a; }
+  .option-label input[type="radio"] { display: none; }
+  .opt-letter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-top: 1px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* States after checking */
+  .option-label.correct {
+    background: #1b2e1f;
+    border-color: var(--accent3);
+  }
+  .option-label.correct .opt-letter { background: var(--accent3); color: #0e0f13; }
+  .option-label.wrong {
+    background: #2b1a1a;
+    border-color: var(--danger);
+  }
+  .option-label.wrong .opt-letter { background: var(--danger); color: #fff; }
+  .option-label.selected-correct {
+    background: #1b2e1f;
+    border-color: var(--accent3);
+    box-shadow: 0 0 0 2px var(--accent3)44;
+  }
+  .option-label.selected-correct .opt-letter { background: var(--accent3); color: #0e0f13; }
+  .option-label.selected-wrong {
+    background: #2b1a1a;
+    border-color: var(--danger);
+    box-shadow: 0 0 0 2px var(--danger)44;
+  }
+  .option-label.selected-wrong .opt-letter { background: var(--danger); color: #fff; }
+
+  /* EXPLANATION */
+  .explanation {
+    margin-top: 14px;
+    background: #191c28;
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    color: var(--accent2);
+    line-height: 1.6;
+    display: none;
+  }
+  .explanation.show { display: block; }
+
+  /* ACTIONS */
+  .section-actions {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    margin-top: 32px; padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0e0f13;
+  }
+  .btn-primary:hover { background: #ffd060; transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn-danger {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* SECTION SCORE */
+  .section-score {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-top: 20px;
+    display: none;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .section-score.show { display: flex; }
+  .ss-num {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .ss-info { flex: 1; }
+  .ss-label { font-size: 0.75rem; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+  .ss-bar-bg {
+    height: 6px; background: var(--border);
+    border-radius: 99px; overflow: hidden; margin-top: 6px;
+  }
+  .ss-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.8s ease;
+  }
+
+  /* FINAL RESULTS */
+  #final-results {
+    display: none;
+    padding: 40px;
+  }
+  #final-results.show { display: block; }
+  .results-card {
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .results-card h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .results-score-big {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1;
+    margin: 20px 0 8px;
+  }
+  .results-pct {
+    font-size: 1rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 28px;
+  }
+  .results-breakdown {
+    display: flex; gap: 12px; justify-content: center;
+    flex-wrap: wrap; margin-bottom: 28px;
+  }
+  .rb-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .rb-item span { display: block; font-size: 1.3rem; font-weight: 700; margin-bottom: 2px; }
+
+  @media (max-width: 600px) {
+    header, .tabs-wrap, .lecture-section, #final-results { padding-left: 16px; padding-right: 16px; }
+    .progress-bar-wrap { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>DMBI Quiz</h1>
+    <p>Dr. Mahmoud Mounir · Lectures 06–10</p>
+  </div>
+  <div class="score-display" id="live-score">
+    <div class="score-num" id="live-score-num">0/0</div>
+    <div class="score-label">SCORE</div>
+  </div>
+</header>
+
+<div class="progress-bar-wrap">
+  <div class="progress-bar-inner">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+    <div class="progress-text" id="progress-text">0 / 0 answered</div>
+  </div>
+</div>
+
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('lec6')">Lec 06 · Clustering Intro</button>
+    <button class="tab-btn" onclick="showTab('lec7')">Lec 07 · Hierarchical</button>
+    <button class="tab-btn" onclick="showTab('lec8')">Lec 08 · Graph Clustering</button>
+    <button class="tab-btn" onclick="showTab('lec9')">Lec 09 · Decision Trees</button>
+    <button class="tab-btn" onclick="showTab('lec10')">Lec 10 · Naïve Bayes</button>
+    <button class="tab-btn" onclick="showTab('results')" id="results-tab" style="display:none">📊 Results</button>
+  </div>
+</div>
+
+<!-- ==================== LECTURE 6 ==================== -->
+<div class="lecture-section active" id="sec-lec6">
+  <div class="lecture-header">
+    <div>
+      <div class="lecture-badge">LECTURE 06</div>
+      <div class="lecture-title">Clustering — Introduction & K-Means</div>
+      <div class="lecture-subtitle">Types of clustering · Distance measures · K-Means algorithm</div>
+    </div>
+  </div>
+
+  <div id="qs-lec6"></div>
+
+  <div class="section-score" id="score-lec6">
+    <div class="ss-num" id="score-lec6-num">0/0</div>
+    <div class="ss-info">
+      <div class="ss-label">LECTURE 06 SCORE</div>
+      <div class="ss-bar-bg"><div class="ss-bar-fill" id="score-lec6-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="section-actions">
+    <button class="btn btn-primary" onclick="checkSection('lec6')">Check Answers</button>
+    <button class="btn btn-secondary" onclick="resetSection('lec6')">Reset</button>
+  </div>
+</div>
+
+<!-- ==================== LECTURE 7 ==================== -->
+<div class="lecture-section" id="sec-lec7">
+  <div class="lecture-header">
+    <div>
+      <div class="lecture-badge">LECTURE 07</div>
+      <div class="lecture-title">Hierarchical Clustering</div>
+      <div class="lecture-subtitle">Agglomerative · Divisive · Linkage strategies · Dendrogram</div>
+    </div>
+  </div>
+
+  <div id="qs-lec7"></div>
+
+  <div class="section-score" id="score-lec7">
+    <div class="ss-num" id="score-lec7-num">0/0</div>
+    <div class="ss-info">
+      <div class="ss-label">LECTURE 07 SCORE</div>
+      <div class="ss-bar-bg"><div class="ss-bar-fill" id="score-lec7-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="section-actions">
+    <button class="btn btn-primary" onclick="checkSection('lec7')">Check Answers</button>
+    <button class="btn btn-secondary" onclick="resetSection('lec7')">Reset</button>
+  </div>
+</div>
+
+<!-- ==================== LECTURE 8 ==================== -->
+<div class="lecture-section" id="sec-lec8">
+  <div class="lecture-header">
+    <div>
+      <div class="lecture-badge">LECTURE 08</div>
+      <div class="lecture-title">Graph-Based Clustering & HCS</div>
+      <div class="lecture-subtitle">Graph theory · MinCut · Highly Connected Subgraphs</div>
+    </div>
+  </div>
+
+  <div id="qs-lec8"></div>
+
+  <div class="section-score" id="score-lec8">
+    <div class="ss-num" id="score-lec8-num">0/0</div>
+    <div class="ss-info">
+      <div class="ss-label">LECTURE 08 SCORE</div>
+      <div class="ss-bar-bg"><div class="ss-bar-fill" id="score-lec8-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="section-actions">
+    <button class="btn btn-primary" onclick="checkSection('lec8')">Check Answers</button>
+    <button class="btn btn-secondary" onclick="resetSection('lec8')">Reset</button>
+  </div>
+</div>
+
+<!-- ==================== LECTURE 9 ==================== -->
+<div class="lecture-section" id="sec-lec9">
+  <div class="lecture-header">
+    <div>
+      <div class="lecture-badge">LECTURE 09</div>
+      <div class="lecture-title">Classification & Decision Trees (ID3)</div>
+      <div class="lecture-subtitle">Entropy · Information Gain · Tree construction · Overfitting</div>
+    </div>
+  </div>
+
+  <div id="qs-lec9"></div>
+
+  <div class="section-score" id="score-lec9">
+    <div class="ss-num" id="score-lec9-num">0/0</div>
+    <div class="ss-info">
+      <div class="ss-label">LECTURE 09 SCORE</div>
+      <div class="ss-bar-bg"><div class="ss-bar-fill" id="score-lec9-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="section-actions">
+    <button class="btn btn-primary" onclick="checkSection('lec9')">Check Answers</button>
+    <button class="btn btn-secondary" onclick="resetSection('lec9')">Reset</button>
+  </div>
+</div>
+
+<!-- ==================== LECTURE 10 ==================== -->
+<div class="lecture-section" id="sec-lec10">
+  <div class="lecture-header">
+    <div>
+      <div class="lecture-badge">LECTURE 10</div>
+      <div class="lecture-title">Naïve Bayes Classifier & Bayes' Theorem</div>
+      <div class="lecture-subtitle">Prior/posterior probability · Laplacian correction · Conditional probability</div>
+    </div>
+  </div>
+
+  <div id="qs-lec10"></div>
+
+  <div class="section-score" id="score-lec10">
+    <div class="ss-num" id="score-lec10-num">0/0</div>
+    <div class="ss-info">
+      <div class="ss-label">LECTURE 10 SCORE</div>
+      <div class="ss-bar-bg"><div class="ss-bar-fill" id="score-lec10-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="section-actions">
+    <button class="btn btn-primary" onclick="checkSection('lec10')">Check Answers</button>
+    <button class="btn btn-secondary" onclick="resetSection('lec10')">Reset</button>
+    <button class="btn btn-primary" onclick="showFinalResults()" style="margin-left:auto">See Final Results →</button>
+  </div>
+</div>
+
+<!-- ==================== RESULTS ==================== -->
+<div id="final-results">
+  <div class="results-card">
+    <h2>Quiz Complete!</h2>
+    <div class="results-score-big" id="final-score-big" style="color:var(--accent)">—</div>
+    <div class="results-pct" id="final-pct">—</div>
+    <div class="results-breakdown" id="final-breakdown"></div>
+    <button class="btn btn-secondary" onclick="resetAll()">Retake All</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// QUESTION DATA
+// ============================================================
+const QUESTIONS = {
+  lec6: [
+    {
+      q: "Clustering is best described as which type of learning?",
+      opts: ["Supervised learning", "Unsupervised learning", "Reinforcement learning", "Semi-supervised learning"],
+      ans: 1,
+      exp: "Clustering has no predefined class labels — it is unsupervised learning where the algorithm finds structure in unlabeled data."
+    },
+    {
+      q: "Which statement best describes objects within the same cluster?",
+      opts: [
+        "They are more similar to objects in other clusters than to each other.",
+        "They are more similar to each other than to objects in other clusters.",
+        "They must be identical in all attributes.",
+        "They are randomly grouped without any similarity criterion."
+      ],
+      ans: 1,
+      exp: "A key characteristic of clustering is that intra-cluster similarity is high and inter-cluster similarity is low."
+    },
+    {
+      q: "Which type of clustering represents clusters by a central vector (centroid) that may not be a member of the dataset?",
+      opts: ["Connectivity-based clustering", "Density-based clustering", "Centroid-based clustering", "Distribution-based clustering"],
+      ans: 2,
+      exp: "Centroid-based (partitional) clustering, like K-Means, represents each cluster by its centroid which may not correspond to any actual data point."
+    },
+    {
+      q: "Which clustering method uses a dendrogram to represent the hierarchy of clusters?",
+      opts: ["Centroid-based clustering", "Density-based clustering", "Connectivity-based (hierarchical) clustering", "Distribution-based clustering"],
+      ans: 2,
+      exp: "Connectivity-based (hierarchical) clustering produces a dendrogram showing the merge/split history of clusters at different distance levels."
+    },
+    {
+      q: "DBSCAN and OPTICS are examples of which type of clustering?",
+      opts: ["Centroid-based clustering", "Distribution-based clustering", "Connectivity-based clustering", "Density-based clustering"],
+      ans: 3,
+      exp: "DBSCAN and OPTICS are density-based algorithms that define clusters as regions of higher density within the data space."
+    },
+    {
+      q: "In K-Means clustering, what criterion is minimized?",
+      opts: [
+        "Sum of distances between all pairs of data points",
+        "Sum of squares of distances between data points and their cluster centroids",
+        "Maximum distance between any two cluster centroids",
+        "Number of iterations until convergence"
+      ],
+      ans: 1,
+      exp: "K-Means minimizes the within-cluster sum of squares (WCSS) — the sum of squared distances from each point to its cluster's centroid."
+    },
+    {
+      q: "In K-Means, when does the algorithm stop?",
+      opts: [
+        "After exactly k iterations",
+        "When all data points are equidistant from their centroid",
+        "When a pass through the training samples causes no new assignments",
+        "When the number of clusters equals the number of data points"
+      ],
+      ans: 2,
+      exp: "Convergence is achieved when no data point changes its cluster assignment during a full pass — meaning centroids have stabilized."
+    },
+    {
+      q: "Given points A=(0,3) and B=(1,3), what is their Manhattan distance?",
+      opts: ["0", "1", "√2", "2"],
+      ans: 1,
+      exp: "Manhattan distance = |0−1| + |3−3| = 1 + 0 = 1."
+    },
+    {
+      q: "Given OB-1=(1,4,1) and OB-2=(1,2,2), what is their Manhattan distance?",
+      opts: ["1", "2", "3", "4"],
+      ans: 2,
+      exp: "Manhattan distance = |1−1| + |4−2| + |1−2| = 0 + 2 + 1 = 3."
+    },
+    {
+      q: "In the K-Means example with K=2, starting with C1=A=(0,3) and C2=D=(3,0.5) (Manhattan distance), after the first iteration which points belong to Cluster 1?",
+      opts: [
+        "A, B, C",
+        "A, B",
+        "A, B, C, D",
+        "C, D, E, F"
+      ],
+      ans: 1,
+      exp: "A is distance 0 from C1 and 5.5 from C2 → Cluster 1. B is distance 1 from C1 and 4.5 from C2 → Cluster 1. C, D, E, F are all closer to C2."
+    },
+    {
+      q: "After the first iteration of K-Means (K=2, Manhattan, C1=A, C2=D), what is the new centroid C1?",
+      opts: ["(0, 3)", "(0.5, 3)", "(1, 3)", "(0.5, 2.5)"],
+      ans: 1,
+      exp: "Cluster 1 contains A=(0,3) and B=(1,3). C1 = ((0+1)/2, (3+3)/2) = (0.5, 3)."
+    },
+    {
+      q: "Which of the following is a weakness of K-Means clustering?",
+      opts: [
+        "It always produces the same clusters regardless of initial conditions.",
+        "The number of clusters K must be determined beforehand.",
+        "It cannot work with numeric data.",
+        "It cannot be applied to high-dimensional data."
+      ],
+      ans: 1,
+      exp: "One key weakness of K-Means is that K must be specified in advance, and different initial conditions may produce different results."
+    },
+    {
+      q: "The time complexity of K-Means clustering is:",
+      opts: ["O(n²)", "O(kn)", "O(tkn)", "O(t·k·n²)"],
+      ans: 2,
+      exp: "K-Means runs in O(tkn) where t = number of iterations, k = number of clusters, n = number of data points."
+    },
+    {
+      q: "The Euclidean distance between OB-1=(1,4,1) and OB-2=(1,2,2) is:",
+      opts: ["√3", "√5", "√6", "3"],
+      ans: 1,
+      exp: "Euclidean distance = √((1−1)² + (4−2)² + (1−2)²) = √(0 + 4 + 1) = √5."
+    },
+    {
+      q: "Which distance measure is defined as the maximum of the absolute differences across all dimensions?",
+      opts: ["Euclidean distance", "Manhattan distance", "Maximum norm", "Hamming distance"],
+      ans: 2,
+      exp: "The maximum norm (Chebyshev distance) is d = max(|X2−X1|, |Y2−Y1|, |Z2−Z1|)."
+    },
+    {
+      q: "Hamming distance measures:",
+      opts: [
+        "The straight-line distance between two points.",
+        "The sum of absolute differences between coordinates.",
+        "The minimum number of substitutions required to change one member into another.",
+        "The angle between two vectors."
+      ],
+      ans: 2,
+      exp: "Hamming distance (sometimes called edit distance) counts the minimum substitutions needed to transform one string/sequence into another."
+    },
+    {
+      q: "In the 3D K-Means example (K=2), the final Cluster 2 contains which objects?",
+      opts: [
+        "OB-1, OB-3, OB-6",
+        "OB-2, OB-4, OB-5, OB-7, OB-8",
+        "OB-1, OB-2, OB-3",
+        "OB-4, OB-5, OB-6, OB-7"
+      ],
+      ans: 0,
+      exp: "The final Cluster 2 contains OB-1=(1,4,1), OB-3=(1,4,2), OB-6=(2,4,2) — those with high Y-value (Y=4)."
+    },
+    {
+      q: "Gaussian mixture models using the expectation-maximization (EM) algorithm are examples of:",
+      opts: ["Centroid-based clustering", "Connectivity-based clustering", "Density-based clustering", "Distribution-based clustering"],
+      ans: 3,
+      exp: "Gaussian mixture models are a classic distribution-based clustering method, where data points belong to the distribution they most likely come from."
+    }
+  ],
+
+  lec7: [
+    {
+      q: "In agglomerative hierarchical clustering, the process starts by:",
+      opts: [
+        "Placing all objects in one single cluster and then splitting.",
+        "Randomly assigning objects to k clusters.",
+        "Treating each object as its own individual cluster and then merging.",
+        "Selecting the k most distant objects as initial centroids."
+      ],
+      ans: 2,
+      exp: "Agglomerative ('bottom-up') clustering starts with each element as its own cluster, then progressively merges the closest pairs."
+    },
+    {
+      q: "The DIANA algorithm is associated with which type of hierarchical clustering?",
+      opts: ["Agglomerative (bottom-up)", "Divisive (top-down)", "Density-based", "Centroid-based"],
+      ans: 1,
+      exp: "DIANA (DIvisive ANAlysis) is the basic divisive method that starts with all objects in one cluster and repeatedly splits."
+    },
+    {
+      q: "The AGNES algorithm stands for:",
+      opts: ["Adaptive General Nested Segmentation", "AGlomerative NEsting", "Automated Graph Node Evaluation System", "Average Group Normalization Estimation"],
+      ans: 1,
+      exp: "AGNES stands for AGlomerative NEsting, introduced by Kaufman & Rousseeuw in 1990."
+    },
+    {
+      q: "In the single-linkage (nearest neighbour) merge strategy, the distance between two clusters A and B is defined as:",
+      opts: [
+        "The maximum distance between any point in A and any point in B.",
+        "The average distance between all pairs of points in A and B.",
+        "The minimum distance between any point in A and any point in B.",
+        "The distance between the centroids of A and B."
+      ],
+      ans: 2,
+      exp: "Single linkage uses the minimum distance between cluster members: d(A,B) = min{d(a,b) : a∈A, b∈B}."
+    },
+    {
+      q: "Complete linkage is also called:",
+      opts: ["Nearest Neighbour", "Average Linkage", "Farthest Neighbour", "Centroid Linkage"],
+      ans: 2,
+      exp: "Complete linkage (Farthest Neighbour) uses the maximum distance between members of the two clusters."
+    },
+    {
+      q: "Which linkage method is most prone to 'chaining', producing elongated incoherent clusters?",
+      opts: ["Complete linkage", "Average linkage", "Single linkage", "Ward's linkage"],
+      ans: 2,
+      exp: "Single linkage is susceptible to chaining — a sequence of close pairs can cause very different clusters to merge into a long chain."
+    },
+    {
+      q: "Which linkage method produces more rounded, compact clusters but is highly influenced by noise/outliers?",
+      opts: ["Single linkage", "Complete linkage", "Average linkage", "Distribution-based linkage"],
+      ans: 1,
+      exp: "Complete linkage produces compact, rounded clusters because it links on the farthest pair, but that also makes it sensitive to outliers."
+    },
+    {
+      q: "Average linkage is described as:",
+      opts: [
+        "Identical to single linkage but applied to weighted graphs.",
+        "A compromise between minimum and maximum distance, less affected by noise.",
+        "The same as complete linkage for sparse datasets.",
+        "Only applicable to 2D data."
+      ],
+      ans: 1,
+      exp: "Average linkage computes the mean distance between all pairs across two clusters — a compromise that is less sensitive to noise and less prone to chaining."
+    },
+    {
+      q: "In the distance matrix example (single linkage), the first merge occurs between A and B because:",
+      opts: [
+        "A and B have the largest distance (1.0) in the matrix.",
+        "A and B have the smallest distance (0.1) in the matrix.",
+        "A and B are randomly selected as the initial pair.",
+        "A and B are the two most central points."
+      ],
+      ans: 1,
+      exp: "Single linkage always merges the pair with the minimum distance. d(A,B) = 0.1 is the smallest entry in the distance matrix."
+    },
+    {
+      q: "After merging A and B into cluster {A,B}, what is the single-linkage distance between {A,B} and C?",
+      opts: ["0.8", "0.5", "0.7", "0.65"],
+      ans: 1,
+      exp: "Single linkage takes the minimum: min(d(A,C), d(B,C)) = min(0.8, 0.5) = 0.5."
+    },
+    {
+      q: "In single-linkage clustering with the given distance matrix, which pair is merged second (after {A,B})?",
+      opts: ["{A,B} and C", "{D} and E", "{C} and D", "{A,B} and D"],
+      ans: 1,
+      exp: "After merging A and B, the next smallest distance in the updated matrix is d(D,E) = 0.2, so D and E are merged next."
+    },
+    {
+      q: "A dendrogram is best described as:",
+      opts: [
+        "A scatter plot of clustered data points.",
+        "A tree structure describing the merge/split history of hierarchical clustering.",
+        "A bar chart showing cluster sizes.",
+        "A grid showing pairwise distances between all data points."
+      ],
+      ans: 1,
+      exp: "A dendrogram is a tree diagram that records the sequence and distances of merges (or splits) in hierarchical clustering."
+    },
+    {
+      q: "In hierarchical clustering, density-based growth leads to:",
+      opts: [
+        "Spherical clusters only.",
+        "Non-spherical clusters due to local growth criteria.",
+        "Always exactly k clusters.",
+        "Complete elimination of all outliers."
+      ],
+      ans: 1,
+      exp: "Density-based growth uses local criteria, allowing clusters to grow into arbitrary non-spherical shapes following regions of high density."
+    },
+    {
+      q: "In Example 2 (Euclidean single-linkage), the first merge combines P3 and P6 because:",
+      opts: [
+        "They have the largest Euclidean distance.",
+        "They are randomly picked as initial clusters.",
+        "Their Euclidean distance of 0.11 is the smallest in the matrix.",
+        "They have identical x-coordinates."
+      ],
+      ans: 2,
+      exp: "d(P3,P6) = 0.11 is the minimum distance in the distance matrix, so P3 and P6 are merged first."
+    },
+    {
+      q: "After merging {P3,P6} in Example 2 (single linkage), what is d({P3,P6}, P4)?",
+      opts: ["0.11", "0.22", "0.15", "0.28"],
+      ans: 2,
+      exp: "Single linkage: d({P3,P6}, P4) = min(d(P3,P4), d(P6,P4)) = min(0.15, 0.22) = 0.15."
+    }
+  ],
+
+  lec8: [
+    {
+      q: "In graph-based clustering, objects are represented as:",
+      opts: ["Edges in a directed acyclic graph", "Nodes in a complete or connected graph", "Rows in a distance matrix", "Centroids of clusters"],
+      ans: 1,
+      exp: "Graph-based clustering represents objects as nodes; edges are weighted by the distance d(x,y) between the nodes they connect."
+    },
+    {
+      q: "A graph G is formally defined as the ordered triple G := (V, E, f), where f is:",
+      opts: [
+        "A set of vertices.",
+        "A set of edges.",
+        "A function mapping each edge to an unordered pair of vertices (or weight W).",
+        "The adjacency matrix of the graph."
+      ],
+      ans: 2,
+      exp: "In the formal definition, f maps each element of E to an unordered pair of vertices in V, or simply represents the edge weight W."
+    },
+    {
+      q: "A path in a graph is defined as:",
+      opts: [
+        "A single edge connecting two vertices.",
+        "A sequence of vertices where each successive vertex is adjacent to its predecessor.",
+        "The set of all edges with minimum weight.",
+        "A complete subgraph where every pair of nodes is connected."
+      ],
+      ans: 1,
+      exp: "A path is a finite sequence of edges joining a sequence of vertices, where each vertex is adjacent to the next."
+    },
+    {
+      q: "A graph is connected if:",
+      opts: [
+        "Every vertex has the same degree.",
+        "There is a path from every vertex to every other vertex.",
+        "The graph has no cycles.",
+        "The minimum cut is greater than n/2."
+      ],
+      ans: 1,
+      exp: "A connected graph has a path between every pair of vertices. If any vertex is unreachable from another, the graph is disconnected."
+    },
+    {
+      q: "The degree of a vertex is:",
+      opts: [
+        "The weight of the heaviest edge incident to it.",
+        "The number of vertices in its connected component.",
+        "The number of edges incident to it.",
+        "The shortest path length to the most distant vertex."
+      ],
+      ans: 2,
+      exp: "The degree of a vertex is simply the count of edges incident to (touching) that vertex."
+    },
+    {
+      q: "A cut (C) in a graph G is:",
+      opts: [
+        "A subset of vertices whose removal disconnects G.",
+        "A subset of edges whose removal disconnects G.",
+        "The minimum spanning tree of G.",
+        "The set of all edges with weight above a threshold."
+      ],
+      ans: 1,
+      exp: "A cut is a subset of edges — removing them disconnects the graph into two or more components."
+    },
+    {
+      q: "The graph connectivity is defined as:",
+      opts: [
+        "The maximum number of edges in any path.",
+        "The minimum number of edges whose removal results in a disconnected graph.",
+        "The total weight of all edges in the minimum spanning tree.",
+        "The number of connected components in the graph."
+      ],
+      ans: 1,
+      exp: "Graph connectivity = the minimum number of edge removals needed to disconnect the graph."
+    },
+    {
+      q: "A highly connected graph (HCS) satisfies which condition (where n = number of vertices)?",
+      opts: [
+        "Connectivity > n",
+        "Connectivity > n/2",
+        "Connectivity = n − 1",
+        "Connectivity ≥ 2n"
+      ],
+      ans: 1,
+      exp: "A graph is highly connected if its edge connectivity > n/2, where n is the number of vertices."
+    },
+    {
+      q: "In the HCS clustering algorithm, if the current subgraph IS highly connected, the algorithm:",
+      opts: [
+        "Splits it into two subgraphs and recurses.",
+        "Returns the subgraph as a cluster.",
+        "Merges it with an adjacent subgraph.",
+        "Removes all edges below a weight threshold."
+      ],
+      ans: 1,
+      exp: "If a subgraph is highly connected (connectivity > n/2), the HCS algorithm returns it as a final cluster without further splitting."
+    },
+    {
+      q: "In the HCS algorithm, if the graph is NOT highly connected, the next step is to:",
+      opts: [
+        "Return the graph as a single cluster.",
+        "Remove all edges and restart.",
+        "Apply MinCut to split into two subgraphs H1 and H2, then recurse on each.",
+        "Merge with the globally closest cluster."
+      ],
+      ans: 2,
+      exp: "If not highly connected, HCS applies MinCut to get H1 and H2, then recursively applies HCS to each subgraph."
+    },
+    {
+      q: "What does the MinCut algorithm aim to find?",
+      opts: [
+        "The path with maximum total weight.",
+        "The cut in a graph with the minimum weight.",
+        "The spanning tree with the maximum number of edges.",
+        "The largest highly connected subgraph."
+      ],
+      ans: 1,
+      exp: "MinCut finds the subset of edges with minimum total weight whose removal disconnects the graph — the minimum weight cut."
+    },
+    {
+      q: "In graph theory, a clique is defined as:",
+      opts: [
+        "A highly connected group of nodes.",
+        "A subset of nodes where each pair of elements is connected.",
+        "An important hub node with high centrality.",
+        "An unimportant outlier node."
+      ],
+      ans: 1,
+      exp: "A clique is a subset of nodes in which every pair of distinct nodes is connected by an edge."
+    },
+    {
+      q: "In the MinCut example, across all phases the minimum cut weight found is:",
+      opts: ["5", "4", "7", "8"],
+      ans: 1,
+      exp: "The fourth phase gives partition {1,2,5,6} vs {3,4,7,8} with cut weight 4, which is the minimum across all phases."
+    },
+    {
+      q: "After finding the minimum cut in the example, the two resulting subgraphs are:",
+      opts: [
+        "G1={1,2,3,4} and G2={5,6,7,8}",
+        "G1={1,2,5,6} and G2={3,4,7,8}",
+        "G1={1,3,5,7} and G2={2,4,6,8}",
+        "G1={1,2,3} and G2={4,5,6,7,8}"
+      ],
+      ans: 1,
+      exp: "The minimum cut of weight 4 separates the graph into G1={1,2,5,6} and G2={3,4,7,8}."
+    },
+    {
+      q: "Graph theory applications in this lecture include all of the following EXCEPT:",
+      opts: [
+        "Social network analysis",
+        "Diffusion of information",
+        "Image compression using wavelets",
+        "Spreading of diseases or rumors"
+      ],
+      ans: 2,
+      exp: "The lecture covers social network analysis, information diffusion, and disease/rumor spreading. Wavelet-based image compression is not mentioned."
+    }
+  ],
+
+  lec9: [
+    {
+      q: "In supervised learning (classification), the training data:",
+      opts: [
+        "Has no class labels — the algorithm discovers them.",
+        "Is accompanied by labels indicating the class of each observation.",
+        "Only contains continuous numerical attributes.",
+        "Cannot be used to classify new unseen data."
+      ],
+      ans: 1,
+      exp: "In supervised classification, each training example has a known class label. The model learns from these labeled examples to classify new data."
+    },
+    {
+      q: "Which of the following is NOT a typical application of classification?",
+      opts: [
+        "Credit/loan approval",
+        "Medical diagnosis (cancer or benign)",
+        "Finding natural groupings in unlabeled customer data",
+        "Fraud detection"
+      ],
+      ans: 2,
+      exp: "Finding natural groupings in unlabeled data is clustering (unsupervised), not classification. The others are classic classification tasks."
+    },
+    {
+      q: "In a decision tree, what condition causes the algorithm to stop partitioning?",
+      opts: [
+        "The tree depth exceeds 10 levels.",
+        "All samples for a node belong to the same class.",
+        "The number of attributes exceeds the number of samples.",
+        "The entropy equals 1."
+      ],
+      ans: 1,
+      exp: "Stopping conditions include: all samples belong to the same class, no remaining attributes, or no samples left. A pure node (same class) is a valid leaf."
+    },
+    {
+      q: "The entropy formula H(D) is:",
+      opts: [
+        "H(D) = Σ pᵢ log₂(pᵢ)",
+        "H(D) = −Σ pᵢ log₂(pᵢ)",
+        "H(D) = Σ pᵢ² log₂(pᵢ)",
+        "H(D) = −Σ log₂(pᵢ)"
+      ],
+      ans: 1,
+      exp: "Entropy is defined as H(D) = −Σᵢ pᵢ log₂(pᵢ), where pᵢ is the probability of class i. It measures the impurity/uncertainty of the data."
+    },
+    {
+      q: "What is the entropy of a dataset where all instances belong to the same class?",
+      opts: ["1", "0.5", "0", "Undefined"],
+      ans: 2,
+      exp: "When p=1 for one class and 0 for all others, H = −(1·log₂(1)) = 0. A perfectly pure set has zero entropy."
+    },
+    {
+      q: "What is the entropy of a dataset split exactly equally between two classes?",
+      opts: ["0", "0.5", "1", "2"],
+      ans: 2,
+      exp: "H = −(0.5·log₂(0.5)) − (0.5·log₂(0.5)) = −(0.5·(−1)) − (0.5·(−1)) = 1. Maximum entropy for a binary split."
+    },
+    {
+      q: "Information Gain for attribute A is calculated as:",
+      opts: [
+        "IG(A) = H(D) + H_A(D)",
+        "IG(A) = H(D) − H_A(D)",
+        "IG(A) = H_A(D) / H(D)",
+        "IG(A) = H(D) × H_A(D)"
+      ],
+      ans: 1,
+      exp: "Information Gain = H(D) − H_A(D), where H_A(D) is the weighted entropy after splitting on attribute A. Higher IG means a better split."
+    },
+    {
+      q: "In the Buys_Computer dataset (14 instances, 9 Yes, 5 No), what is H(Buys_Computer)?",
+      opts: ["0.694", "0.779", "0.893", "0.941"],
+      ans: 3,
+      exp: "H = −(9/14)log₂(9/14) − (5/14)log₂(5/14) = 0.41 + 0.531 = 0.941."
+    },
+    {
+      q: "Given IG(Age)=0.247, IG(Income)=0.029, IG(Student)=0.162, IG(Credit_Rating)=0.048, which attribute is chosen as the root of the decision tree?",
+      opts: ["Income", "Student", "Credit_Rating", "Age"],
+      ans: 3,
+      exp: "The attribute with the highest information gain is selected as the root. Age has IG=0.247, the highest among all attributes."
+    },
+    {
+      q: "For the mushroom dataset (8 instances, 3 Yes edible, 5 No), what is H(Edible)?",
+      opts: ["0.811", "0.941", "0.9544", "1.0"],
+      ans: 2,
+      exp: "H(Edible) = −(5/8)log₂(5/8) − (3/8)log₂(3/8) = 0.4238 + 0.5306 = 0.9544."
+    },
+    {
+      q: "In the mushroom example, which attribute has the highest information gain and becomes the root?",
+      opts: ["Not Heavy", "Smelly", "Spotted", "Smooth"],
+      ans: 3,
+      exp: "IG(Smooth) = 0.0488, which is the highest among Not Heavy (0.0032), Smelly (0.0032), Spotted (0.0032), and Smooth (0.0488)."
+    },
+    {
+      q: "Overfitting in a decision tree means:",
+      opts: [
+        "The tree has too few branches and misclassifies training data.",
+        "The tree has too many branches reflecting noise, leading to poor accuracy on unseen data.",
+        "The entropy at every node equals exactly 0.5.",
+        "The algorithm fails to converge during training."
+      ],
+      ans: 1,
+      exp: "Overfitting occurs when the tree is too complex, fitting noise in training data and performing poorly on new, unseen samples."
+    },
+    {
+      q: "Prepruning in decision tree construction means:",
+      opts: [
+        "Removing branches from a fully grown tree after construction.",
+        "Halting tree construction early if a goodness measure falls below a threshold.",
+        "Generating all possible trees and selecting the best one.",
+        "Converting all continuous attributes to discrete ones before building the tree."
+      ],
+      ans: 1,
+      exp: "Prepruning stops growing the tree early when further splits don't improve (or worsen) the quality measure, preventing overfitting proactively."
+    },
+    {
+      q: "For continuous-valued attributes in decision tree induction, the typical approach is to:",
+      opts: [
+        "Ignore them — decision trees only work with categorical data.",
+        "Use each unique value as a separate branch.",
+        "Sort values and evaluate midpoints between adjacent values as candidate split points.",
+        "Randomly assign a split point and adjust during training."
+      ],
+      ans: 2,
+      exp: "Continuous attributes are handled by sorting values and evaluating midpoints (aᵢ+aᵢ₊₁)/2 as candidate thresholds, picking the one with minimum expected entropy."
+    },
+    {
+      q: "The ID3 algorithm builds the tree using which strategy?",
+      opts: [
+        "Bottom-up recursive merging",
+        "Random attribute selection at each node",
+        "Top-down recursive divide-and-conquer with greedy attribute selection",
+        "Breadth-first search with uniform cost"
+      ],
+      ans: 2,
+      exp: "ID3 builds the tree top-down in a greedy, recursive divide-and-conquer manner, always selecting the attribute with the highest information gain."
+    },
+    {
+      q: "When the branch for Age=31..40 in the Buys_Computer tree results in [0 No, 4 Yes], this node becomes:",
+      opts: [
+        "A split node requiring further partitioning.",
+        "A leaf node labeled 'Yes' with entropy = 0.",
+        "A pruned node removed from the tree.",
+        "A node requiring a second attribute split."
+      ],
+      ans: 1,
+      exp: "All 4 instances are 'Yes', so entropy = 0. This is a pure leaf node — no further splitting is needed."
+    }
+  ],
+
+  lec10: [
+    {
+      q: "Naïve Bayes is described as a 'naïve' classifier because it assumes:",
+      opts: [
+        "All attributes have equal importance.",
+        "Attributes are conditionally independent given the class.",
+        "The training set is always noise-free.",
+        "The class distribution is always uniform."
+      ],
+      ans: 1,
+      exp: "The 'naïve' assumption is conditional independence: given the class label, each attribute is assumed independent of all other attributes."
+    },
+    {
+      q: "Bayes' Theorem states that P(H|X) equals:",
+      opts: [
+        "P(X|H) / P(H)",
+        "P(H) × P(X)",
+        "P(X|H) × P(H) / P(X)",
+        "P(X) / P(H)"
+      ],
+      ans: 2,
+      exp: "Bayes' Theorem: P(H|X) = P(X|H) × P(H) / P(X). The posterior is proportional to the likelihood times the prior."
+    },
+    {
+      q: "In Bayesian classification, P(H) is called the:",
+      opts: ["Posterior probability", "Prior probability", "Likelihood", "Evidence"],
+      ans: 1,
+      exp: "P(H) is the prior probability — the initial probability of hypothesis H before observing any data X."
+    },
+    {
+      q: "In the Buys_Computer Naïve Bayes example, P(buys_computer = 'yes') equals:",
+      opts: ["5/14", "9/14", "7/14", "4/9"],
+      ans: 1,
+      exp: "There are 9 'yes' instances out of 14 total, so P(buys_computer='yes') = 9/14 ≈ 0.643."
+    },
+    {
+      q: "For X=(age≤30, income=medium, student=yes, credit=fair), P(X|buys_computer='yes') is computed as:",
+      opts: [
+        "0.222 + 0.444 + 0.667 + 0.667",
+        "0.222 × 0.444 × 0.667 × 0.667",
+        "max(0.222, 0.444, 0.667, 0.667)",
+        "0.222 / (0.444 × 0.667 × 0.667)"
+      ],
+      ans: 1,
+      exp: "Under the naïve independence assumption, P(X|Cᵢ) = ∏ P(xₖ|Cᵢ). For 'yes': 0.222 × 0.444 × 0.667 × 0.667 ≈ 0.044."
+    },
+    {
+      q: "In the example, P(X|C₁)×P(C₁) = 0.028 and P(X|C₂)×P(C₂) = 0.007. The classification result is:",
+      opts: [
+        "buys_computer = 'no', because 0.007 < 0.028",
+        "buys_computer = 'yes', because 0.028 > 0.007",
+        "Inconclusive, because the ratio is not large enough",
+        "buys_computer = 'no', because P(C₂) is smaller"
+      ],
+      ans: 1,
+      exp: "We pick the class with the highest posterior: P(X|C₁)×P(C₁) = 0.028 > 0.007, so X is classified as 'buys_computer = yes'."
+    },
+    {
+      q: "The Laplacian correction (Laplacian estimator) is used in Naïve Bayes to:",
+      opts: [
+        "Reduce the number of attributes used for classification.",
+        "Avoid zero probabilities by adding 1 to each count.",
+        "Normalize all probabilities to sum to 1.",
+        "Speed up computation by eliminating rare attribute values."
+      ],
+      ans: 1,
+      exp: "Laplacian correction adds 1 to each count so that no probability is zero. Zero probabilities kill the entire product in Naïve Bayes."
+    },
+    {
+      q: "With 1000 tuples and income=low(0), medium(990), high(10), after Laplacian correction, P(income=low) becomes:",
+      opts: ["0/1000", "1/1003", "1/1000", "0.001"],
+      ans: 1,
+      exp: "Adding 1 to each of 3 categories: P(low) = (0+1)/(1000+3) = 1/1003."
+    },
+    {
+      q: "A key disadvantage of the Naïve Bayes classifier is:",
+      opts: [
+        "It is very difficult to implement.",
+        "It requires very large datasets to function at all.",
+        "The conditional independence assumption often does not hold in practice, reducing accuracy.",
+        "It cannot handle categorical attributes."
+      ],
+      ans: 2,
+      exp: "In reality, attributes often have dependencies (e.g., patient symptoms and diseases). The independence assumption can reduce accuracy."
+    },
+    {
+      q: "In the disease screening problem: P(disease)=0.02, P(+test|disease)=0.95, P(+test|no disease)=0.03. What is P(+test)?",
+      opts: ["0.019", "0.0484", "0.0295", "0.95"],
+      ans: 1,
+      exp: "P(+test) = P(+test|disease)×P(disease) + P(+test|no disease)×P(no disease) = (0.95)(0.02) + (0.03)(0.98) = 0.019 + 0.0294 = 0.0484."
+    },
+    {
+      q: "Given a positive test result in the disease problem (P(+test)=0.0484), P(no disease | +test) equals approximately:",
+      opts: ["0.393", "0.607", "0.95", "0.02"],
+      ans: 1,
+      exp: "P(no disease|+test) = P(+test|no disease)×P(no disease) / P(+test) = (0.03×0.98)/0.0484 ≈ 0.607."
+    },
+    {
+      q: "In the factory problem: P(A)=0.35, P(B)=0.25, P(C)=0.40, P(def|A)=0.03, P(def|B)=0.06, P(def|C)=0.05. What is P(defective)?",
+      opts: ["0.035", "0.0455", "0.045", "0.0495"],
+      ans: 1,
+      exp: "P(def) = (0.03)(0.35) + (0.06)(0.25) + (0.05)(0.40) = 0.0105 + 0.015 + 0.02 = 0.0455."
+    },
+    {
+      q: "P(A | defective) in the factory problem equals approximately:",
+      opts: ["0.35", "0.462", "0.231", "0.131"],
+      ans: 2,
+      exp: "P(A|def) = P(def|A)×P(A) / P(def) = (0.03×0.35)/0.0455 = 0.0105/0.0455 ≈ 0.231."
+    },
+    {
+      q: "For continuous-valued attributes in Naïve Bayes, P(xₖ|Cᵢ) is typically computed using:",
+      opts: [
+        "A lookup table of exact counts",
+        "A Gaussian distribution with mean μ and standard deviation σ",
+        "The Manhattan distance to the class centroid",
+        "A uniform distribution across the attribute range"
+      ],
+      ans: 1,
+      exp: "For continuous attributes, Naïve Bayes assumes a Gaussian (normal) distribution and estimates P(xₖ|Cᵢ) using the Gaussian PDF with the class mean and standard deviation."
+    },
+    {
+      q: "Which of the following is an advantage of the Naïve Bayes classifier?",
+      opts: [
+        "It models complex dependencies between attributes perfectly.",
+        "It is easy to implement and provides good results in most cases.",
+        "It does not require any training data.",
+        "It always outperforms decision trees."
+      ],
+      ans: 1,
+      exp: "Naïve Bayes is praised for its simplicity of implementation and competitive performance on many real-world problems despite its strong independence assumption."
+    },
+    {
+      q: "P(age ≤ 30 | buys_computer = 'no') in the dataset (5 No instances, 3 of which are age ≤ 30) is:",
+      opts: ["2/9", "3/9", "3/5", "2/5"],
+      ans: 2,
+      exp: "Among the 5 'no' instances, 3 have age ≤ 30, so P(age≤30 | no) = 3/5 = 0.6."
+    }
+  ]
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  answered: {},   // qid -> chosen index
+  checked: {}     // section -> true/false
+};
+
+let totalQ = 0;
+Object.values(QUESTIONS).forEach(arr => totalQ += arr.length);
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  Object.keys(QUESTIONS).forEach(sec => renderSection(sec));
+  updateProgress();
+}
+
+function renderSection(sec) {
+  const container = document.getElementById(`qs-${sec}`);
+  container.innerHTML = '';
+  QUESTIONS[sec].forEach((q, i) => {
+    const qid = `${sec}-${i}`;
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.id = `card-${qid}`;
+
+    const optHtml = q.opts.map((opt, oi) => `
+      <label class="option-label" id="opt-${qid}-${oi}">
+        <input type="radio" name="${qid}" value="${oi}" onchange="selectAnswer('${qid}', ${oi})">
+        <span class="opt-letter">${String.fromCharCode(65+oi)}</span>
+        <span>${opt}</span>
+      </label>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="question-top">
+        <span class="q-num">Q${i+1}</span>
+        <span class="q-text">${q.q}</span>
+      </div>
+      <div class="options">${optHtml}</div>
+      <div class="explanation" id="exp-${qid}">${q.exp}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function selectAnswer(qid, oi) {
+  state.answered[qid] = oi;
+  updateProgress();
+}
+
+// ============================================================
+// CHECK SECTION
+// ============================================================
+function checkSection(sec) {
+  state.checked[sec] = true;
+  let correct = 0;
+  const qs = QUESTIONS[sec];
+
+  qs.forEach((q, i) => {
+    const qid = `${sec}-${i}`;
+    const chosen = state.answered[qid];
+    const card = document.getElementById(`card-${qid}`);
+    const exp = document.getElementById(`exp-${qid}`);
+
+    // Remove old styling
+    q.opts.forEach((_, oi) => {
+      const lbl = document.getElementById(`opt-${qid}-${oi}`);
+      lbl.className = 'option-label';
+    });
+
+    // Apply correct answer highlight
+    const correctLbl = document.getElementById(`opt-${qid}-${q.ans}`);
+    correctLbl.classList.add('correct');
+
+    if (chosen !== undefined) {
+      if (chosen === q.ans) {
+        correct++;
+        card.className = 'question-card answered-correct';
+        document.getElementById(`opt-${qid}-${chosen}`).className = 'option-label selected-correct';
+      } else {
+        card.className = 'question-card answered-wrong';
+        document.getElementById(`opt-${qid}-${chosen}`).className = 'option-label selected-wrong';
+      }
+    }
+
+    exp.classList.add('show');
+    // disable inputs
+    q.opts.forEach((_, oi) => {
+      const inp = document.querySelector(`#opt-${qid}-${oi} input`);
+      if (inp) inp.disabled = true;
+    });
+  });
+
+  // Show section score
+  const scoreDiv = document.getElementById(`score-${sec}`);
+  scoreDiv.classList.add('show');
+  document.getElementById(`score-${sec}-num`).textContent = `${correct}/${qs.length}`;
+  document.getElementById(`score-${sec}-bar`).style.width = `${(correct/qs.length)*100}%`;
+
+  updateProgress();
+  document.getElementById('live-score').style.display = 'block';
+  updateLiveScore();
+}
+
+// ============================================================
+// RESET SECTION
+// ============================================================
+function resetSection(sec) {
+  QUESTIONS[sec].forEach((q, i) => {
+    const qid = `${sec}-${i}`;
+    delete state.answered[qid];
+  });
+  delete state.checked[sec];
+  renderSection(sec);
+  document.getElementById(`score-${sec}`).classList.remove('show');
+  updateProgress();
+  updateLiveScore();
+}
+
+// ============================================================
+// PROGRESS
+// ============================================================
+function updateProgress() {
+  const answered = Object.keys(state.answered).length;
+  document.getElementById('progress-fill').style.width = `${(answered/totalQ)*100}%`;
+  document.getElementById('progress-text').textContent = `${answered} / ${totalQ} answered`;
+}
+
+function updateLiveScore() {
+  let correct = 0, checked = 0;
+  Object.keys(QUESTIONS).forEach(sec => {
+    if (!state.checked[sec]) return;
+    QUESTIONS[sec].forEach((q, i) => {
+      const qid = `${sec}-${i}`;
+      checked++;
+      if (state.answered[qid] === q.ans) correct++;
+    });
+  });
+  if (checked > 0) document.getElementById('live-score-num').textContent = `${correct}/${checked}`;
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(tab) {
+  document.querySelectorAll('.lecture-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('final-results').classList.remove('show');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+  if (tab === 'results') {
+    document.getElementById('final-results').classList.add('show');
+  } else {
+    document.getElementById(`sec-${tab}`).classList.add('active');
+  }
+  event.currentTarget.classList.add('active');
+}
+
+// ============================================================
+// FINAL RESULTS
+// ============================================================
+function showFinalResults() {
+  // Auto-check unchecked sections
+  Object.keys(QUESTIONS).forEach(sec => {
+    if (!state.checked[sec]) checkSection(sec);
+  });
+
+  let grandCorrect = 0;
+  const breakdown = [];
+  Object.keys(QUESTIONS).forEach(sec => {
+    let c = 0;
+    QUESTIONS[sec].forEach((q, i) => {
+      if (state.answered[`${sec}-${i}`] === q.ans) c++;
+    });
+    grandCorrect += c;
+    breakdown.push({ sec, c, total: QUESTIONS[sec].length });
+  });
+
+  const pct = Math.round((grandCorrect / totalQ) * 100);
+  const bigEl = document.getElementById('final-score-big');
+  bigEl.textContent = `${grandCorrect}/${totalQ}`;
+  bigEl.style.color = pct >= 70 ? 'var(--accent3)' : pct >= 50 ? 'var(--accent)' : 'var(--danger)';
+  document.getElementById('final-pct').textContent = `${pct}% correct`;
+
+  const labels = { lec6: 'Lec 06', lec7: 'Lec 07', lec8: 'Lec 08', lec9: 'Lec 09', lec10: 'Lec 10' };
+  document.getElementById('final-breakdown').innerHTML = breakdown.map(b =>
+    `<div class="rb-item"><span style="color:${b.c/b.total>=0.7?'var(--accent3)':b.c/b.total>=0.5?'var(--accent)':'var(--danger)'}">${b.c}/${b.total}</span>${labels[b.sec]}</div>`
+  ).join('');
+
+  document.getElementById('results-tab').style.display = 'block';
+  document.querySelectorAll('.lecture-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('final-results').classList.add('show');
+  document.getElementById('results-tab').classList.add('active');
+}
+
+function resetAll() {
+  state = { answered: {}, checked: {} };
+  Object.keys(QUESTIONS).forEach(sec => {
+    renderSection(sec);
+    document.getElementById(`score-${sec}`).classList.remove('show');
+  });
+  document.getElementById('results-tab').style.display = 'none';
+  document.getElementById('final-results').classList.remove('show');
+  showTab('lec6');
+  document.querySelectorAll('.tab-btn')[0].classList.add('active');
+  updateProgress();
+  document.getElementById('live-score').style.display = 'none';
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderAll();
+</script>
+</body>
+</html>
