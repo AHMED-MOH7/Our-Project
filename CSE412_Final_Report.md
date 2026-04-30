@@ -15,15 +15,16 @@
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Phase 1 — Download & Build Yocto Project](#phase-1)
+1. [Phase 1 — Download & Build Yocto Project](#phase-1)
+   - 1.0 Phase 1 Introduction
    - 1.1 Environment Setup
    - 1.2 Target Configuration
    - 1.3 Raspberry Pi Layer
    - 1.4 Qt5 Layer
    - 1.5 Application Design & Source Code
    - 1.6 Phase 1 Deliverables
-3. [Phase 2 — Build the Image for Each Application](#phase-2)
+2. [Phase 2 — Build the Image for Each Application](#phase-2)
+   - 2.0 Phase 2 Introduction
    - 2.1 Custom Yocto Layer
    - 2.2 Layer Integration
    - 2.3 Client Application Recipe
@@ -33,25 +34,25 @@
    - 2.7 QEMU Deployment
    - 2.8 Connecting the Two Instances
    - 2.9 Proof of Communication
-4. [Bonus Features](#bonus)
-5. [Conclusion](#conclusion)
-
----
-
-## Introduction
-
-This project demonstrates the full workflow of **Embedded Linux development using the Yocto Project**. The objective is to design, cross-compile, and deploy a **Qt5 TCP chat application** across two separate embedded Linux images, each running inside a QEMU virtual machine and communicating over a virtual network bridge.
-
-The project is split into two phases:
-
-- **Phase 1** focuses on setting up the Yocto build environment, integrating third-party BSP and framework layers (Raspberry Pi and Qt5), and implementing the chat application using Qt's socket API.
-- **Phase 2** focuses on packaging the application into a custom Yocto layer, building two separate root filesystem images, deploying them on QEMU, and establishing TCP communication between the two instances.
-
-The project demonstrates key embedded Linux competencies including: BitBake recipes, layer management, cross-compilation, systemd service integration, QEMU networking with TAP/bridge interfaces, and Qt5 application development.
+3. [Bonus Features](#bonus)
+4. [Conclusion](#conclusion)
 
 ---
 
 ## Phase 1 — Download & Build Yocto Project
+
+### Phase 1 Introduction
+
+Phase 1 establishes the foundation of the entire project. The goal is to set up a fully working **Yocto Kirkstone build environment** on a Linux host (WSL2 Ubuntu 24.04), configure it to target `qemux86-64`, and extend it with two essential third-party layers: the **Raspberry Pi BSP layer** (`meta-raspberrypi`) for hardware support, and the **Qt5 framework layer** (`meta-qt5`) which provides the libraries and toolchain needed to cross-compile Qt applications for the target.
+
+Once the environment is ready, Phase 1 also covers the **design and implementation** of both applications — the TCP chat server and the TCP chat client — written in C++ using Qt5's `QTcpServer` and `QTcpSocket` classes. These source files are the core deliverable of Phase 1 alongside the two Yocto configuration files (`local.conf` and `bblayers.conf`).
+
+**Phase 1 covers:**
+- Cloning and initializing the Poky reference distribution
+- Configuring the build target and parallelism settings
+- Integrating `meta-raspberrypi` and `meta-qt5` layers
+- Writing the full server and client Qt5 source code
+- Delivering `local.conf`, `bblayers.conf`, and all source files
 
 ### Phase 1 Architecture Overview
 
@@ -631,6 +632,23 @@ BBLAYERS ?= " \
 ---
 
 ## Phase 2 — Build the Image for Each Application
+
+### Phase 2 Introduction
+
+Phase 2 takes the source code from Phase 1 and packages it into a **production-ready embedded Linux image** using the Yocto build system. The main task is to create a custom Yocto layer (`meta-chat`) that contains BitBake recipes for both applications, systemd service definitions, and image recipes that assemble the complete root filesystems.
+
+Two separate images are built and deployed on two independent QEMU virtual machines. A **Linux bridge network** (`br0`) is configured on the WSL2 host to connect both instances on the same subnet, allowing the chat client to reach the chat server over TCP. The server image includes a systemd unit that automatically starts `chat-server` on every boot — this is the **bonus auto-start** requirement. The client GUI is made accessible from Windows through Qt's built-in VNC platform, forwarded via `socat`.
+
+**Phase 2 covers:**
+- Creating and registering the `meta-chat` custom layer
+- Writing BitBake recipes for the server (with systemd auto-start) and client
+- Writing image recipes based on `core-image-minimal`
+- Cross-compiling and assembling both root filesystem images
+- Deploying both images on separate QEMU instances
+- Setting up a Linux bridge with TAP interfaces to connect the two VMs
+- Verifying end-to-end TCP communication via terminal logs
+
+---
 
 ### Phase 2 Architecture Overview
 
