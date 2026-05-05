@@ -90,13 +90,18 @@ flowchart TD
 
 ## 1. Module Map
 
-Ten Python modules make up the package. Each has a single responsibility.
+Eight Python modules make up the package. Parsing is handled upstream by the SDLC pipeline.
 
 ```mermaid
 graph TB
     subgraph entry["Entry Points"]
         MM["__main__.py\npython -m tm_pipeline"]
-        CLI["CLI\n--config  --mode  --log"]
+        CLI["CLI\n--config  --mode  --reqs-file  --fns-file  --log"]
+    end
+
+    subgraph upstream["Your SDLC Pipeline  (upstream)"]
+        UP1["Requirement Analysis phase\n→ parsed_reqs.json"]
+        UP2["Static Analysis phase\n→ parsed_functions.json"]
     end
 
     subgraph orch["Orchestrator"]
@@ -104,12 +109,10 @@ graph TB
     end
 
     subgraph pipeline["Pipeline Steps"]
-        S1["requirements_parser.py\nStep 1 — Parse Requirements"]
-        S2["code_parser.py\nStep 2 — Parse Source Code"]
-        S3["llm_mapper.py\nStep 3 — LLM Mapping"]
-        S4["output_generator.py\nStep 4 — Write Outputs"]
-        S5["change_detector.py\nStep 5 — Detect Changes"]
-        S6["watcher.py\nStep 6 — File Watcher"]
+        S3["llm_mapper.py\nStep 1 — TF-IDF + LLM Mapping"]
+        S4["output_generator.py\nStep 2 — Write Outputs"]
+        S5["change_detector.py\nStep 3 — Detect Changes"]
+        S6["watcher.py\nStep 4 — File Watcher"]
     end
 
     subgraph support["Support"]
@@ -119,32 +122,31 @@ graph TB
 
     MM --> MAIN
     CLI --> MAIN
-    MAIN --> S1 & S2 & S3 & S4 & S5 & VA
+    UP1 & UP2 -->|"--reqs-file / --fns-file"| MAIN
+    MAIN --> S3 & S4 & S5 & VA
     MAIN --> S6
     S6 -->|"debounced trigger"| MAIN
 
-    S1 & S2 & S3 & S4 & VA --> UT
+    S3 & S4 & VA --> UT
 ```
 
 ---
 
 ## 2. Module Dependencies
 
-Arrows show `import` relationships. `utils.py` is the only shared leaf — nothing else is imported by two or more modules.
+Arrows show `import` relationships. `utils.py` is the only shared leaf.
 
 ```mermaid
 graph LR
     MM["__main__.py"] --> MAIN["main.py"]
 
-    MAIN --> S1["requirements_parser.py"]
-    MAIN --> S2["code_parser.py"]
     MAIN --> S3["llm_mapper.py"]
     MAIN --> S4["output_generator.py"]
     MAIN --> S5["change_detector.py"]
     MAIN --> VA["validate.py"]
     MAIN --> S6["watcher.py"]
 
-    S1 & S2 & S3 & S4 & VA --> UT["utils.py"]
+    S3 & S4 & VA --> UT["utils.py"]
 
     S6 -->|"calls run_incremental callback"| MAIN
 ```
@@ -157,13 +159,13 @@ Every requirement is mapped from scratch. Used when there is no previous state o
 
 ```mermaid
 flowchart TD
-    A(["python -m tm_pipeline --mode full"]) --> B["Load tm_config.yaml"]
+    A(["python -m tm_pipeline --mode full\n  --reqs-file parsed_reqs.json\n  --fns-file  parsed_functions.json"]) --> B["Load tm_config.yaml"]
 
-    B --> C["requirements_parser\nparse_requirements(config)\n→ list of req dicts"]
-    B --> D["code_parser\nparse_source_files(config)\n→ list of function dicts"]
+    B --> C["Load  parsed_reqs.json\n→ list of req dicts  { id, description, hash }"]
+    B --> D["Load  parsed_functions.json\n→ list of function dicts  { name, file, line_start, … hash }"]
 
     C --> E{any reqs?}
-    E -- No --> FAIL(["Abort — no requirements found"])
+    E -- No --> FAIL(["Abort — no requirements loaded"])
     E -- Yes --> F["llm_mapper  ·  run_mapping\nFor each req:\n  Pass 1 — TF-IDF shortlist top-K fns\n  Pass 2 — LLM call with candidates\n→ list of LLMResult dicts"]
     D --> F
 
@@ -186,8 +188,8 @@ flowchart TD
     C -- No --> D(["Fallback → Full Run"])
     C -- Yes --> E["Load state\n{ req_hashes, fn_hashes, tm, unmapped }"]
 
-    E --> F["requirements_parser\nparse_requirements(config)"]
-    E --> G["code_parser\nparse_source_files(config)"]
+    E --> F["Load  parsed_reqs.json\n→ list of req dicts"]
+    E --> G["Load  parsed_functions.json\n→ list of function dicts"]
 
     F --> H["change_detector  ·  detect_changes\nCompare SHA-256 hashes\nnew / modified / deleted reqs & fns"]
     G --> H
@@ -215,10 +217,10 @@ Runs one incremental pass on startup, then blocks and re-runs after each debounc
 ```mermaid
 flowchart TD
     A(["python -m tm_pipeline --mode watch"]) --> B["Run Incremental once on start"]
-    B --> C["watcher  ·  start_watcher\nObserver on:\n  source dirs  *.c / *.h\n  requirements dir  *.json / *.csv"]
+    B --> C["watcher  ·  start_watcher\nObserver on:\n  parsed_reqs.json parent dir\n  parsed_functions.json parent dir"]
 
     C --> D{{"Watching…\n(blocking)"}}
-    D -->|".c / .h / .csv / .json saved"| E["Reset debounce timer\n(default 5 s)"]
+    D -->|"*.json saved"| E["Reset debounce timer\n(default 5 s)"]
     E --> F{"Another save\nbefore timer fires?"}
     F -- Yes --> E
     F -- No  --> G["_DebouncedHandler._fire\nTrigger run_incremental(config)"]
@@ -327,8 +329,6 @@ graph LR
         direction TB
         MM2["__main__.py"]
         MAIN2["main.py"]
-        S12["requirements_parser.py"]
-        S22["code_parser.py"]
         S32["llm_mapper.py"]
         S42["output_generator.py"]
         S52["change_detector.py"]
