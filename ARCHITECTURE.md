@@ -2,6 +2,92 @@
 
 ---
 
+## 0. Overview
+
+### What the Tool Does and Why
+
+You have two artifacts that must stay in sync:
+
+| Artifact | Example | Problem |
+|:---|:---|:---|
+| **Requirements document** | *"SWS_CANIF_00308 — The service shall call `Can_SetControllerMode()`…"* | Which function actually implements this? |
+| **C source code** | `CanIf_SetControllerMode()`, `CanIf_RxIndication()`, … 30 functions | Which requirement does each function satisfy? |
+
+Doing this mapping by hand for 273 requirements × 30 functions is error-prone and breaks every time code or requirements change.
+**`tm_pipeline` automates it end-to-end using AI.**
+
+```mermaid
+flowchart LR
+    subgraph HAVE["What you start with"]
+        R["Requirements Document\n273 SWS_CANIF_XXXXX items\neach saying 'the system SHALL…'"]
+        C["C Source Code\n30+ functions across CanIf.c\nbody text · signatures · comments"]
+        CFG["One config file\ntm_config.yaml\npaths · model · thresholds"]
+    end
+
+    TOOL{{"  tm_pipeline\n  AI-Driven TM Generator  "}}
+
+    subgraph GET["What you get — automatically"]
+        TM["Traceability Matrix\nREQ ID → Function(s)\nwith confidence score\nAUTO-REQ-CODE-TM.md"]
+        GAP["Gap Report\nunmapped requirements\nwith reason\nAUTO-Unmapped-REQ.md"]
+        JSON["Machine Report\ntm_report.json\nfor impact analysis & CI"]
+        RQ["Review Queue\nLOW-confidence items\nflagged for human sign-off"]
+    end
+
+    R & C & CFG --> TOOL
+    TOOL --> TM & GAP & JSON & RQ
+```
+
+---
+
+### How It Works — Abstract Pipeline
+
+Three stages run in sequence. The middle stage is where AI is used.
+
+```mermaid
+flowchart TD
+    INPUT1["📄 Requirements file\nCSV · Excel · JSON · DOORS HTML · Plain text"]
+    INPUT2["💻 Source files\nC · C++ · Python · Java"]
+    INPUT3["⚙️ tm_config.yaml\nlanguage · model · paths · thresholds"]
+
+    INPUT1 & INPUT2 & INPUT3 --> STAGE1
+
+    subgraph STAGE1["① PARSE"]
+        direction LR
+        P1["Extract every requirement\n→ id  description  SHA-256 hash"]
+        P2["Extract every function\n→ name  file  line  signature  body  inline refs  SHA-256 hash"]
+    end
+
+    STAGE1 --> STAGE2
+
+    subgraph STAGE2["② MAP  —  2-Pass AI per requirement"]
+        direction LR
+        M1["Pass 1 — TF-IDF shortlist\nScore all functions against the requirement text\nKeep top-K candidates  cheap and fast"]
+        M2["Pass 2 — LLM reasoning\nSend requirement + candidates to Claude or GPT\nModel returns MAPPED or UNMAPPED + confidence + reason"]
+        M1 --> M2
+    end
+
+    STAGE2 --> STAGE3
+
+    subgraph STAGE3["③ OUTPUT + VALIDATE"]
+        direction LR
+        O1["Write all TM files\ncheck integrity  mapped + unmapped = total\nflag LOW-confidence items for review"]
+        O2["Save tm_state.json\nstores hashes of everything processed\nused by the next run"]
+    end
+
+    STAGE3 --> DONE["📁 Outputs ready"]
+
+    subgraph MAINTAIN["Keep it up to date automatically"]
+        INC["Incremental mode\nSHA-256 diff detects changes\nOnly the affected requirements are re-mapped\n90 %+ of LLM calls saved on typical edits"]
+        WATCH["Watch mode\nFile-system watcher auto-triggers\nan incremental run on every save"]
+        CI["CI/CD\nGitHub Actions runs on every push\nauto-commits updated TM back to the repo"]
+    end
+
+    O2 -.->|"read by next run"| INC
+    INC & WATCH & CI -.->|"re-enter pipeline"| STAGE1
+```
+
+---
+
 ## 1. Module Map
 
 Ten Python modules make up the package. Each has a single responsibility.
