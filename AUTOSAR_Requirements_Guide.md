@@ -115,66 +115,45 @@ AUTOSAR organizes requirements across different document types, each at a differ
 
 ## 3. How to Differentiate: Decision Guide
 
-### 3.0 Master Classification Flowchart
+> **Scope:** SWS (Software Specification) requirements are the primary subject of this guide because they are the only requirement type that directly and consistently maps to C source functions in the Traceability Matrix pipeline. SRS and RS requirements operate at a higher abstraction level — they define system capabilities and architectural constraints rather than specific function behavior. Some SRS functional requirements (runtime event handling, protocol support) do propagate down to code and may appear as MAPPED in the TM, but they are exceptional cases. NFR requirements from any document type describe design properties of the entire module and will never map to a single C function.
+
+---
+
+### 3.0 SWS Classification Decision Tree
 
 ```mermaid
 flowchart TD
-    START(["Requirement to Classify"]) --> G0
+    START(["SWS_CANIF Requirement\nid · description"]) --> G1
 
-    G0{"Gate 0\nIdentify Document Type\nfrom requirement ID prefix"}
+    G1{"Gate 1\nNamed API or callback in text?\nCanIf_Init · CanIf_Transmit\nCan_SetControllerMode\nUser_RxIndication · CanIf_ControllerBusOff\nany AUTOSAR function name"}
 
-    G0 -->|"SRS_Can_XXXXX"| A1
-    G0 -->|"SWS_CANIF_XXXXX"| B1
-    G0 -->|"RS_Can_XXXXX"| C1
-    G0 -->|"Unknown / No Prefix"| B1
+    G1 -->|"YES"| FR1(["FR — API / Callback\nmappable_to_code: true"])
+    G1 -->|"NO"| G2
 
-    subgraph SRS_SECTION["SECTION A — SRS Document Rules"]
-        direction TB
-        A1{"A1\nObservable runtime outcome?\nsignal state change · callback fires\nPDU tx/rx · mode switch\nerror logged · HW driven"}
-        A2{"A2\nStructural or design property?\nHW independence · layer abstraction\nencapsulation · portability\nAUTOSAR architecture rule"}
-        A3{"A3\nProtocol or standard compliance?\nCAN XL · CAN FD · ISO specification\nspecific protocol version"}
-        A4{"A4\nQuality attribute?\nperformance · reliability · safety\nsecurity · maintainability · scalability"}
-        A1 -->|"NO"| A2
-        A2 -->|"NO"| A3
-        A3 -->|"NO"| A4
-    end
+    G2{"Gate 2\nState transition or\nprocessing logic?\nUNINIT to INIT · TX_ONLINE to OFFLINE\nrouting · DLC check · ID filtering\nif state X then action Y\nPDU multiplexing · buffer handling"}
 
-    subgraph SWS_SECTION["SECTION B — SWS Document Rules"]
-        direction TB
-        B1{"B1\nNamed function or callback?\nCanIf_Init · Can_SetControllerMode\nCanIf_Transmit · User_RxIndication\nany AUTOSAR API name"}
-        B2{"B2\nSpecific input to output\nor named state transition?\nUNINIT to INIT · TX_ONLINE to OFFLINE\nrouting · filtering · DLC check\nPDU multiplexing · ID translation"}
-        B3{"B3\nConfiguration parameter\nor variability point?\npre-compile · link-time · post-build\nARXML container · CanIfCtrlCfg\nCanIfTxPduCfg · ECU configuration"}
-        B4{"B4\nError detection or\nDET / DEM reporting?\nCANIF_E_UNINIT · CANIF_E_INVALID_PDU\nDEM fault event · error recovery action"}
-        B5{"B5\nModule-wide architectural\nconstraint?\nno HW register access · MISRA-C\nnon-reentrant rule · BSW naming"}
-        B6{"B6\nTiming, performance\nor memory constraint?\nexecution time budget\nRAM / ROM limit · scheduling period"}
-        B1 -->|"NO"| B2
-        B2 -->|"NO"| B3
-        B3 -->|"NO"| B4
-        B4 -->|"NO"| B5
-        B5 -->|"NO"| B6
-    end
+    G2 -->|"YES"| FR2(["FR — State / Processing\nmappable_to_code: true"])
+    G2 -->|"NO"| G3
 
-    subgraph RS_SECTION["SECTION C — RS Document Rules"]
-        direction TB
-        C1{"C1\nConcrete testable system behavior\nat ECU or vehicle level?"}
-    end
+    G3{"Gate 3\nConfiguration variability point?\npre-compile · link-time · post-build\nCanIfCtrlCfg · CanIfTxPduCfg\nCanIfRxPduCfg · CanIfInitCfg\nECU configuration · ARXML"}
 
-    A1 -->|"YES"| FR_A1(["FUNCTIONAL\nRuntime Behavior"])
-    A2 -->|"YES"| NFR_A2(["NON-FUNCTIONAL\nArchitectural Constraint"])
-    A3 -->|"YES"| FR_A3(["FUNCTIONAL\nProtocol Support"])
-    A4 -->|"YES"| NFR_A4(["NON-FUNCTIONAL\nQuality Attribute"])
-    A4 -->|"NO — default"| NFR_AD(["NON-FUNCTIONAL\nSRS Default"])
+    G3 -->|"YES"| CR(["CR — Configuration Req\nmappable_to_code: partial"])
+    G3 -->|"NO"| G4
 
-    B1 -->|"YES"| FR_B1(["FUNCTIONAL\nAPI / Callback Behavior"])
-    B2 -->|"YES"| FR_B2(["FUNCTIONAL\nState / Processing Logic"])
-    B3 -->|"YES"| CR_B(["CONFIGURATION\nRequirement"])
-    B4 -->|"YES"| FR_B4(["FUNCTIONAL\nError Handling"])
-    B5 -->|"YES"| NFR_B5(["NON-FUNCTIONAL\nModule Constraint"])
-    B6 -->|"YES"| NFR_B6(["NON-FUNCTIONAL\nTiming / Memory"])
-    B6 -->|"NO — default"| FR_BD(["FUNCTIONAL\nSWS Default"])
+    G4{"Gate 4\nDET or DEM reporting?\nCANIF_E_UNINIT\nCANIF_E_INVALID_PDU_ID\nCANIF_E_PARAM_CONTROLLER\nDEM fault event · error recovery action"}
 
-    C1 -->|"YES"| FR_C(["FUNCTIONAL\nSystem Behavior"])
-    C1 -->|"NO — default"| NFR_C(["NON-FUNCTIONAL\nRS Default"])
+    G4 -->|"YES"| FR4(["FR — Error Handling\nmappable_to_code: true"])
+    G4 -->|"NO"| G5
+
+    G5{"Gate 5\nModule-wide architectural constraint?\nno HW register access\nnon-reentrant rule\nMISRA-C compliance\nBSW naming convention\nHW independence"}
+
+    G5 -->|"YES"| NFR5(["NFR — Arch Constraint\nmappable_to_code: false"])
+    G5 -->|"NO"| G6
+
+    G6{"Gate 6\nTiming, performance\nor memory constraint?\nexecution time budget\nRAM / ROM footprint limit\nscheduling period"}
+
+    G6 -->|"YES"| NFR6(["NFR — Timing / Memory\nmappable_to_code: false"])
+    G6 -->|"NO — default"| FR_DEF(["FR — General Functional\nDefault at SWS level\nmappable_to_code: true"])
 ```
 
 ---
@@ -183,377 +162,376 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    FR(["Functional\nRequirement"])          --> MAPPED["Maps to C function\nMAPPED in TM"]
-    CR(["Configuration\nRequirement"])       --> PARTIAL["May map to init fn\nor config header\nPartially MAPPED"]
-    NFR_SWS(["Non-Functional\nReq — SWS"]) --> RARE["Rarely maps\nExpect UNMAPPED\nArchitecture-wide"]
-    NFR_SRS(["Non-Functional\nReq — SRS / RS"]) --> ALWAYS["Never maps to\na single function\nAlways UNMAPPED"]
+    subgraph CLASS["Requirement Classification"]
+        FR_SWS["FR · SWS\nAPI/Callback · State/Processing\nError Handling · General"]
+        CR_SWS["CR · SWS\nConfiguration Parameter"]
+        NFR_SWS["NFR · SWS\nArch Constraint · Timing/Memory"]
+        FR_SRS["FR · SRS or RS\nRuntime behavior only"]
+        NFR_SRS["NFR · SRS or RS\nAll architectural NFRs"]
+    end
 
-    MAPPED    --> NOTE_OK["High MAPPED rate expected\nfor SWS functional reqs"]
-    ALWAYS    --> NOTE_OK2["High UNMAPPED rate for NFR\nis CORRECT behavior\nnot a pipeline failure"]
+    subgraph TM["TM Pipeline Outcome"]
+        MAPPED["MAPPED\nREQ maps to one or more\nC functions\nHIGH or MEDIUM confidence"]
+        PARTIAL["PARTIAL\nMay map to init fn\nor _Cfg.h structure\nreview recommended"]
+        UNMAPPED_ARCH["UNMAPPED\nArchitecture-wide constraint\nnot a pipeline failure"]
+        MULTI["MAPPED\none req → multiple fns\nor multiple reqs → one fn"]
+        ALWAYS_UN["UNMAPPED\nAlways — design constraint\ncannot trace to single fn"]
+    end
+
+    FR_SWS  --> MAPPED
+    FR_SWS  --> MULTI
+    CR_SWS  --> PARTIAL
+    NFR_SWS --> UNMAPPED_ARCH
+    FR_SRS  --> MULTI
+    NFR_SRS --> ALWAYS_UN
 ```
+
+> A high UNMAPPED rate for NFR requirements is **expected and correct behavior**, not a pipeline failure. The review queue must distinguish NFR-driven UNMAPPED items from genuinely missing implementations.
 
 ---
 
 ### 3.2 Edge Case Resolution Flowchart
 
+Apply this chart **before** Gates 1–6 whenever the requirement text contains an ambiguous phrase.
+
 ```mermaid
 flowchart TD
-    EC_START(["Ambiguous requirement\ncannot classify directly"]) --> EC1
+    EDGE(["Ambiguous SWS requirement\nApply before Gates 1 to 6"]) --> EC1
 
     EC1{"Contains\n'shall support'?"}
-    EC1 -->|"YES"| EC1A{"What follows\n'shall support'?"}
     EC1 -->|"NO"| EC2
 
-    EC1A -->|"a runtime event\nor scenario"| FR_EC1(["FUNCTIONAL"])
-    EC1A -->|"another AUTOSAR\nmodule"| FR_EC2(["FUNCTIONAL"])
-    EC1A -->|"a hardware or\nprotocol feature"| FR_EC3(["FUNCTIONAL"])
-    EC1A -->|"safe startup/shutdown\nin SRS"| NFR_EC1(["NON-FUNCTIONAL\nSafety Quality"])
-    EC1A -->|"safe startup/shutdown\nin SWS"| FR_EC4(["FUNCTIONAL\nState Sequence"])
-    EC1A -->|"configurable X"| CR_EC1(["CONFIGURATION REQ"])
+    EC1 -->|"runtime event\nor scenario"| FR_S1(["FR"])
+    EC1 -->|"another AUTOSAR\nmodule integration"| FR_S2(["FR"])
+    EC1 -->|"hardware or\nprotocol feature"| FR_S3(["FR"])
+    EC1 -->|"configurable X\nor variability"| CR_S(["CR"])
+    EC1 -->|"safe startup/shutdown\nin SWS"| FR_S4(["FR\nstate sequence"])
+    EC1 -->|"safe startup/shutdown\nin SRS"| NFR_S(["NFR\nsafety quality attr"])
 
-    EC2{"Contains\n'shall provide'\nor 'shall offer'?"}
-    EC2 -->|"YES"| EC2A{"Which document?"}
+    EC2{"Contains\n'shall be independent'\nor 'internally'?"}
+    EC2 -->|"YES — any doc"| NFR_IND(["NFR — always\nencapsulation / independence"])
     EC2 -->|"NO"| EC3
 
-    EC2A -->|"SRS"| NFR_EC2(["NON-FUNCTIONAL\nArchitectural"])
-    EC2A -->|"SWS + describes\nspecific behavior"| FR_EC5(["FUNCTIONAL"])
-    EC2A -->|"SWS + just names\nthe interface"| NFR_EC3(["NON-FUNCTIONAL"])
-
-    EC3{"Contains\n'shall be independent'\nor 'internally'?"}
-    EC3 -->|"YES"| NFR_EC4(["NON-FUNCTIONAL\nAlways — any doc"])
+    EC3{"Wakeup or\nBus-Off handling?"}
+    EC3 -->|"YES — any doc"| FR_WU(["FR — always\nruntime event handling"])
     EC3 -->|"NO"| EC4
 
-    EC4{"Describes\ninitialization?"}
-    EC4 -->|"SRS — capability\nexistence"| NFR_EC5(["NON-FUNCTIONAL"])
-    EC4 -->|"SWS — specific\nsequence of calls"| FR_EC6(["FUNCTIONAL"])
+    EC4{"Contains\n'shall provide'\nor 'shall offer'?"}
+    EC4 -->|"SWS · specific\nbehavior described"| FR_OFF(["FR"])
+    EC4 -->|"SWS · only names\nthe interface"| NFR_OFF(["NFR"])
+    EC4 -->|"SRS · any form"| NFR_SRS_OFF(["NFR\narchitectural constraint"])
+    EC4 -->|"NO"| EC5
 
-    EC4 -->|"NO"| EC5{"Describes\nmode management?"}
-    EC5 -->|"SRS — general\ncapability"| NFR_EC6(["NON-FUNCTIONAL"])
-    EC5 -->|"SWS — named state +\nnamed API call"| FR_EC7(["FUNCTIONAL"])
-    EC5 -->|"NO"| EC6{"Wakeup or\nBus-Off handling?"}
-    EC6 -->|"YES — any doc"| FR_EC8(["FUNCTIONAL\nAlways"])
-    EC6 -->|"NO"| EC7{"Safety-related?"}
-    EC7 -->|"ISO 26262\nASIL compliance"| NFR_EC7(["NON-FUNCTIONAL"])
-    EC7 -->|"Specific guarded\nstate transition"| FR_EC9(["FUNCTIONAL"])
+    EC5{"Mode management?"}
+    EC5 -->|"SWS · named state\nplus named API call"| FR_MM(["FR"])
+    EC5 -->|"SWS or SRS ·\ngeneric capability"| NFR_MM(["NFR"])
+    EC5 -->|"NO"| EC6
+
+    EC6{"Safety-related?"}
+    EC6 -->|"ISO 26262 / ASIL\nstandard compliance"| NFR_SF(["NFR"])
+    EC6 -->|"SWS · specific guarded\nstate transition"| FR_SF(["FR"])
+    EC6 -->|"NO"| RESUME(["No edge case matched\nResume Gates 1 to 6"])
 ```
 
 ---
 
-This guide is structured as a layered decision process. Work through each gate in order. The first gate that gives a definitive answer is your final answer — do not continue to later gates.
+### 3.3 Step-by-Step Explanation — SWS Gates
+
+Work through each gate in order. Stop at the **first YES**. Do not continue to later gates after a match.
 
 ---
 
-### Gate 0 — Identify the Document Type First
+#### Gate 1 — Named API or Callback
 
-The document type is the outermost context and changes every rule that follows.
+A named AUTOSAR function anywhere in the requirement text is the strongest indicator of a Functional requirement. The requirement is describing the behavior of a specific, identifiable code symbol.
 
-```
-Read the requirement ID prefix:
-│
-├── SRS_Can_XXXXX  →  SRS rules apply  (Section A below)
-├── SWS_CANIF_XXXXX →  SWS rules apply  (Section B below)
-├── RS_Can_XXXXX   →  RS rules apply   (Section C below)
-└── No prefix / unknown → treat as SWS if it references a specific function or API
-```
-
-> **Why this matters for the TM pipeline:** Only FR and CR requirements from SWS typically map to a specific C function. NFR requirements describe design properties — they are architecture-wide and will always appear as `UNMAPPED` in the TM. Knowing the type early prevents wasted LLM calls on unmappable requirements.
-
----
-
-### Section A — SRS Requirements
-
-SRS sits at the software requirements level. It defines *what capabilities the software stack must have*, not *how any single function implements them*. This makes several patterns that look functional actually architectural.
-
-**Step A1 — Does the requirement describe a runtime event with an observable outcome?**
-
-Observable outcome means: a signal changes state, a callback fires, a PDU is transmitted/received, a mode switches, an error is logged, hardware is driven.
+**Signal keywords:** any `CanIf_*`, `Can_*`, `PduR_*`, `EcuM_*`, `ComM_*` function name; `<User>_RxIndication`, `<User>_TxConfirmation`, `<User>_BusOffNotification`; any function referenced with `()` notation.
 
 ```
-YES → Functional
-NO  → Continue to A2
+YES → FR  (sub_type: API_CALLBACK)
+NO  → Gate 2
 ```
 
-Examples of YES (Functional in SRS):
-- "The CAN Driver shall notify the CAN Interface on reception of a CAN frame" → observable callback event
-- "The CAN Transceiver Driver shall handle wakeup by bus during sleep/standby transition" → observable runtime race condition handling
-- "The bus transceiver driver shall support safe system startup and shutdown" → observable lifecycle behavior with safety outcome
-
-Examples of NO → continue:
-- "The CAN Interface shall offer a network abstract API" → no specific runtime event described
-- "The CAN Interface shall be independent from CAN Controller and Transceiver" → describes a design property
-
----
-
-**Step A2 — Does the requirement define a structural or design property of the module?**
-
-Structural/design properties include: hardware independence, layer abstraction, encapsulation of internal details, compliance with AUTOSAR layered architecture, portability.
-
-```
-YES → Non-Functional (Architectural Constraint)
-NO  → Continue to A3
-```
-
-Examples of YES (Non-Functional in SRS):
-- "The CAN Interface implementation shall be independent from underlying CAN Controller and CAN Transceiver" → portability / HW independence
-- "The CAN Bus Transceiver driver shall handle transceiver-specific timing requirements internally" → encapsulation
-- "The CAN State Manager shall offer a network abstract API to upper layer" → abstraction layer design constraint
-- "The CAN Interface and Driver shall offer a CAN Controller-specific interface for initialization" → interface provision = architectural constraint at SRS level
-
----
-
-**Step A3 — Does the requirement mandate compliance with a protocol, standard, or external specification?**
-
-```
-YES → Functional  (protocol support is a behavioral capability)
-NO  → Continue to A4
-```
-
-Examples of YES (Functional):
-- "The CAN bus transceiver driver shall support CAN XL" → protocol version support
-
----
-
-**Step A4 — Does the requirement describe a quality attribute (performance, reliability, safety, security, maintainability)?**
-
-```
-YES → Non-Functional
-NO  → Default → Non-Functional (when in doubt at SRS level, err toward NFR)
-```
-
----
-
-### Section B — SWS Requirements
-
-SWS is at the detailed design and implementation level. Requirements here are tied to specific APIs, functions, configuration parameters, and runtime states. The classification rules differ significantly from SRS.
-
-**Step B1 — Does the requirement reference a specific named function, API call, or callback?**
-
-Named function = `CanIf_Init()`, `CanIf_Transmit()`, `Can_SetControllerMode()`, `PduR_CanIfRxIndication()`, etc.
-
-```
-YES → Functional
-NO  → Continue to B2
-```
-
-Examples of YES (Functional in SWS):
-- "The CAN Interface shall call `Can_SetControllerMode()` to request a mode transition" → named API call
-- "CanIf_Init() shall initialize all static variables of the CanIf module" → named function behavior
-- "The CAN Interface shall call the registered `<User>_RxIndication()` callback after successful reception" → named callback
-
----
-
-**Step B2 — Does the requirement describe a specific input → processing → output or state transition?**
-
-State transitions: UNINIT → INIT, ONLINE → SLEEP, TX_ONLINE → TX_OFFLINE, etc.
-Processing: filtering, routing, DLC check, ID translation, PDU multiplexing.
-
-```
-YES → Functional
-NO  → Continue to B3
-```
-
-Examples of YES (Functional in SWS):
-- "The CAN Interface shall discard received PDUs whose DLC is smaller than the configured DLC" → input check → discard decision
-- "The CAN Interface shall route incoming L-PDUs to the configured upper layer module" → routing logic
-- "If the CAN Controller is in state STOPPED, CanIf shall reject all transmit requests" → state-guarded behavior
-
----
-
-**Step B3 — Does the requirement define a configuration parameter, configuration container, or a compile-time/link-time/post-build variability point?**
-
-```
-YES → Configuration Requirement
-NO  → Continue to B4
-```
-
-Keywords: pre-compile time, link time, post-build, `CanIfCtrlCfg`, `CanIfTxPduCfg`, `CanIfRxPduCfg`, `CanIfInitCfg`, `SWC parameter`, `ECU configuration`, `ARXML`.
-
-Examples of YES (Configuration Requirement in SWS):
-- "The number of CAN Controllers supported by CanIf shall be configurable at pre-compile time"
-- "Each Tx PDU shall have a configurable handle ID (`CanIfTxPduId`)"
-- "DLC check shall be enabled/disabled per PDU via configuration"
-
----
-
-**Step B4 — Does the requirement describe error detection, error reporting to DET, or fault notification to DEM?**
-
-DET = Development Error Tracer (detects API misuse during development).
-DEM = Diagnostic Event Manager (reports production faults).
-
-```
-YES → Functional
-NO  → Continue to B5
-```
-
-Examples of YES (Functional in SWS):
-- "If `CanIf_Transmit()` is called before initialization, CanIf shall report `CANIF_E_UNINIT` to DET"
-- "The CAN Interface shall report a DEM event if a CAN Controller enters Bus-Off state"
-
----
-
-**Step B5 — Does the requirement describe a constraint that applies to the entire module architecture, not to a single function?**
-
-Module-wide constraints: independence from hardware, AUTOSAR BSW compliance, memory footprint, re-entrancy rules, execution time budgets.
-
-```
-YES → Non-Functional
-NO  → Continue to B6
-```
-
-Examples of YES (Non-Functional in SWS):
-- "The CanIf module shall not directly access CAN hardware registers" → independence constraint
-- "CanIf functions shall be non-reentrant unless explicitly stated" → concurrency constraint
-- "The CanIf module shall be MISRA-C compliant" → code quality constraint
-
----
-
-**Step B6 — Does the requirement describe timing, performance, or memory constraints?**
-
-```
-YES → Non-Functional
-NO  → Default → Functional  (at SWS level, unclassified requirements default to Functional)
-```
-
-Examples of YES (Non-Functional in SWS):
-- "The CanIf module shall complete PDU routing within the configured scheduling period"
-- "CanIf RAM usage shall not exceed X bytes per controller"
-
----
-
-### Section C — RS Requirements
-
-RS is the highest-level specification. It defines system-wide goals and constraints, not module-specific behaviors. Almost all RS requirements are Non-Functional or represent system-level capabilities that translate into multiple SRS/SWS requirements downstream.
-
-**Step C1 — Does the requirement define a concrete, testable system behavior at the ECU or vehicle level?**
-
-```
-YES → Functional
-NO  → Non-Functional (default for RS level)
-```
-
----
-
-### Edge Cases and Ambiguous Patterns
-
-These are the patterns most likely to cause misclassification. Each has a definitive resolution.
-
----
-
-#### Edge Case 1 — "shall support" pattern
-
-"Shall support" is the most ambiguous phrase in AUTOSAR requirements. Resolution depends on what follows:
-
-| Pattern | Classification | Reasoning |
-|---|---|---|
-| "shall support [a runtime event/scenario]" | **Functional** | Describes handling of a specific runtime situation |
-| "shall support [another AUTOSAR module]" | **Functional** | Describes integration behavior at runtime |
-| "shall support [a hardware/protocol feature]" | **Functional** | Capability that maps to a code path |
-| "shall support [safe startup/shutdown]" in **SRS** | **Non-Functional** | Safety quality attribute at architecture level |
-| "shall support [safe startup/shutdown]" in **SWS** | **Functional** | Specific sequence of calls and state transitions |
-| "shall support [configurable X]" | **Configuration Req** (SWS) | Variability point |
-
----
-
-#### Edge Case 2 — "shall provide / shall offer" pattern
-
-| Pattern | Document | Classification |
-|---|---|---|
-| "shall provide an API for X" | **SRS** | **Non-Functional** — API provision is an architectural design decision at SRS level |
-| "shall provide an API for X" | **SWS** | **Functional** — the API exists; this describes its behavior |
-| "shall offer a network abstract interface" | **SRS** | **Non-Functional** — abstraction layer constraint |
-| "shall provide `CanIf_Init()` with signature..." | **SWS** | **Functional** — specific API contract |
-
----
-
-#### Edge Case 3 — Initialization requirements
-
-Initialization requirements are Functional in SWS but can be NFR in SRS:
-
-| Pattern | Document | Classification | Reasoning |
-|---|---|---|---|
-| "Module shall support initialization" | **SRS** | **Non-Functional** | Capability existence = architectural |
-| "Module shall provide an init interface" | **SRS** | **Non-Functional** | Interface provision at SRS = architectural |
-| "`CanIf_Init()` shall set all Tx buffers to idle" | **SWS** | **Functional** | Specific state initialization action |
-| "`CanIf_Init()` shall call `Can_Init()`" | **SWS** | **Functional** | Named sequence of calls |
-
----
-
-#### Edge Case 4 — Safety requirements
-
-Safety requirements span both FR and NFR depending on specificity:
-
-| Pattern | Classification | Reasoning |
-|---|---|---|
-| "shall support safe ECU shutdown" *(SRS)* | **Non-Functional** | System safety quality attribute |
-| "shall transition to SLEEP only after all pending Tx are confirmed" *(SWS)* | **Functional** | Specific guarded state transition |
-| "shall not lose any PDU during mode transition" *(SWS)* | **Functional** | Observable runtime guarantee |
-| "shall comply with ISO 26262 ASIL-B" | **Non-Functional** | Safety standard compliance |
-
----
-
-#### Edge Case 5 — Protocol / standard compliance
-
-| Pattern | Classification | Reasoning |
-|---|---|---|
-| "shall support CAN XL" | **Functional** | Protocol support = behavioral capability in code |
-| "shall support CAN FD" | **Functional** | Same reasoning |
-| "shall be MISRA-C compliant" | **Non-Functional** | Code quality constraint, not runtime behavior |
-| "shall follow AUTOSAR BSW naming convention" | **Non-Functional** | Design standard constraint |
-
----
-
-#### Edge Case 6 — Wakeup / Bus-Off handling
-
-These are always Functional because they describe specific runtime event sequences:
-
-| Pattern | Classification |
+| Requirement text | Result |
 |---|---|
-| "shall handle wakeup by bus during standby transition" | **Functional** |
-| "shall notify EcuM on wakeup detection" | **Functional** |
-| "shall call `CanIf_ControllerBusOff()` on Bus-Off detection" | **Functional** |
-| "shall enable/disable wakeup notification per bus" | **Functional** |
+| "...shall call `Can_SetControllerMode()`..." | FR |
+| "`CanIf_Init()` shall initialize all static variables..." | FR |
+| "...shall invoke the registered `<User>_RxIndication()` callback..." | FR |
 
 ---
 
-#### Edge Case 7 — Mode management
+#### Gate 2 — State Transition or Processing Logic
 
-Mode management straddles FR and NFR. Key differentiator is whether a specific runtime transition with named states/calls is described:
+The requirement describes a concrete input-to-output transformation or a guarded state machine transition. Even without a named function, this always generates code.
 
-| Pattern | Document | Classification |
-|---|---|---|
-| "shall support multiple controller modes" | **SRS** | **Non-Functional** |
-| "shall manage controller operating modes" | **SRS** | **Non-Functional** |
-| "shall request SLEEP mode via `Can_SetControllerMode(CAN_CS_SLEEP)`" | **SWS** | **Functional** |
-| "shall reject Tx requests when controller is in STOPPED state" | **SWS** | **Functional** |
+**Signal keywords:** UNINIT, INIT, SLEEP, STARTED, STOPPED, TX_ONLINE, TX_OFFLINE, TX_LPDU_ACTIVE; `if [state] then [action]`; route, filter, discard, forward, translate, check, multiplex, buffer.
 
----
+```
+YES → FR  (sub_type: STATE_PROCESSING)
+NO  → Gate 3
+```
 
-#### Edge Case 8 — Independence / portability requirements
-
-Always Non-Functional regardless of document type:
-
-| Pattern | Classification |
+| Requirement text | Result |
 |---|---|
-| "shall be independent from CAN Controller hardware" | **Non-Functional** |
-| "shall not use hardware-specific data types" | **Non-Functional** |
-| "shall abstract the underlying transceiver from the upper layers" | **Non-Functional** |
-| "shall handle timing requirements internally" | **Non-Functional** |
+| "...shall discard PDUs whose DLC is smaller than configured..." | FR |
+| "...shall route incoming L-PDUs to the configured upper layer..." | FR |
+| "If controller is STOPPED, CanIf shall reject all Tx requests..." | FR |
 
 ---
 
-### TM Pipeline Implication — Mappability to Code
+#### Gate 3 — Configuration Variability Point
 
-For the automated traceability pipeline, classification has a direct consequence on whether a requirement will map to a C function:
+The requirement defines what a system integrator can configure — not what the module does at runtime. These requirements trace to `_Cfg.h` structures, generated ARXML containers, or initialization parameters rather than to functional code bodies.
 
-| Classification | Typically Maps to a C Function? | Notes |
-|---|---|---|
-| **Functional (SWS)** | **Yes** | Primary target for TM mapping |
-| **Configuration Req (SWS)** | **Partially** | May map to `_Cfg.h` or init function, or be UNMAPPED |
-| **Functional (SRS)** | **Sometimes** | High-level FR may map to multiple functions or none |
-| **Non-Functional (SWS)** | **Rarely** | Architecture-wide — expect UNMAPPED in TM |
-| **Non-Functional (SRS)** | **No** | Design constraint — always UNMAPPED in TM |
+**Signal keywords:** pre-compile time, link time, post-build, configurable, `CanIfCtrlCfg`, `CanIfTxPduCfg`, `CanIfRxPduCfg`, `CanIfInitCfg`, `CanIfTrcvCfg`, ECU configuration, ARXML, `SWC parameter`.
 
-> A high UNMAPPED rate for NFR requirements is **expected and correct behavior**, not a pipeline failure. The review queue should distinguish NFR-driven UNMAPPED items from genuinely missing implementations.
+```
+YES → CR  (sub_type: CONFIG_PARAM)
+NO  → Gate 4
+```
+
+| Requirement text | Result |
+|---|---|
+| "The number of CAN Controllers shall be configurable at pre-compile time" | CR |
+| "DLC check shall be enabled/disabled per PDU via configuration" | CR |
+| "Each Tx PDU shall have a configurable handle ID `CanIfTxPduId`" | CR |
+
+---
+
+#### Gate 4 — DET / DEM Error Reporting
+
+Error detection and fault notification are always runtime behaviors — they result in concrete function calls to `Det_ReportError()` or `Dem_ReportErrorStatus()`. Both DET (development-time API misuse) and DEM (production fault events) produce traceable code.
+
+**Signal keywords:** DET, DEM, `CANIF_E_UNINIT`, `CANIF_E_INVALID_PDU_ID`, `CANIF_E_PARAM_CONTROLLER`, `CANIF_E_PARAM_CANID`, `Det_ReportError`, `Dem_ReportErrorStatus`, development error, production error, error recovery.
+
+```
+YES → FR  (sub_type: ERROR_HANDLING)
+NO  → Gate 5
+```
+
+| Requirement text | Result |
+|---|---|
+| "...shall report `CANIF_E_UNINIT` to DET if called before init..." | FR |
+| "...shall report a DEM event when Bus-Off state is detected..." | FR |
+
+---
+
+#### Gate 5 — Module-Wide Architectural Constraint
+
+The requirement imposes a rule on the entire module's design — it cannot be traced to a single function because it applies everywhere (or nowhere in code specifically). These are design decisions enforced by architecture, code review, or static analysis tools, not by a specific function body.
+
+**Signal keywords:** shall not access hardware registers directly, independent from, non-reentrant, MISRA-C, MISRA-C:2012, BSW naming convention, shall not use platform-specific types, shall not call [module] directly, memory-mapped.
+
+```
+YES → NFR  (sub_type: ARCH_CONSTRAINT)
+NO  → Gate 6
+```
+
+| Requirement text | Result |
+|---|---|
+| "The CanIf module shall not directly access CAN hardware registers" | NFR |
+| "CanIf functions shall be non-reentrant unless explicitly stated" | NFR |
+| "The CanIf module shall be MISRA-C:2012 compliant" | NFR |
+
+---
+
+#### Gate 6 — Timing, Performance, or Memory Constraint
+
+The requirement defines a quality bound that applies across the module's execution. No single function implements a timing budget — it is validated by measurement, scheduler configuration, or static analysis.
+
+**Signal keywords:** within X milliseconds, scheduling period, execution time, worst-case execution time (WCET), RAM usage, ROM footprint, stack depth, shall not exceed X bytes, real-time.
+
+```
+YES → NFR  (sub_type: TIMING_PERF_MEMORY)
+NO  → Default → FR  (sub_type: GENERAL_FUNCTIONAL)
+```
+
+> **Default rule:** At SWS level, if no gate matches, the requirement is Functional. SWS documents exist to specify implementation; any unclassified SWS requirement is almost certainly describing runtime behavior that has a code counterpart.
+
+---
+
+### 3.4 Note on SRS and RS Requirements Affecting Code
+
+While SWS is the primary source for the TM pipeline, two SRS/RS patterns do propagate to code and may appear as MAPPED:
+
+| SRS / RS Pattern | TM Behavior |
+|---|---|
+| Wakeup / Bus-Off event handling | Maps to `CanIf_ControllerBusOff()`, `CanIf_CheckWakeup()` |
+| Protocol feature support (CAN XL, CAN FD) | Maps to frame-type handling in Rx/Tx paths |
+| All other SRS FR | May map to multiple functions; expect LOW confidence |
+| All SRS / RS NFR | Always UNMAPPED — design constraints only |
+
+---
+
+### 3.5 LLM Classification Prompt
+
+Use this prompt as the **system message** in a preprocessing classification step added to the TM pipeline before `llm_mapper.run_mapping()`. It returns a structured JSON classification for each requirement, which the pipeline can use to skip NFR/CR requirements from the LLM mapping stage and reduce unnecessary API calls.
+
+````
+SYSTEM PROMPT — AUTOSAR SWS Requirement Classifier
+====================================================
+
+You are an AUTOSAR SWS requirements classification expert embedded in an
+automated Traceability Matrix (TM) generation pipeline for AUTOSAR CanIf.
+
+INPUT
+-----
+A single AUTOSAR requirement object:
+  { "req_id": "SWS_CANIF_XXXXX", "description": "..." }
+
+TASK
+----
+Classify the requirement and determine its traceability potential to C source
+functions. Work through the gates below in order. Stop at the first YES answer.
+
+EDGE CASE RULES — check these FIRST before the gates
+-----------------------------------------------------
+Apply the first matching rule and skip the gates entirely.
+
+  E1  Text contains "shall be independent" or "internally"
+      → NFR, sub_type ARCH_CONSTRAINT, mappable false
+
+  E2  Text describes wakeup or Bus-Off handling (any phrasing)
+      → FR, sub_type STATE_PROCESSING, mappable true
+
+  E3  Text contains "shall support" → resolve by what follows:
+        runtime event / scenario          → FR, sub_type STATE_PROCESSING
+        another AUTOSAR module            → FR, sub_type API_CALLBACK
+        hardware or protocol feature      → FR, sub_type STATE_PROCESSING
+        safe startup / shutdown           → FR, sub_type STATE_PROCESSING
+        configurable / variability        → CR, sub_type CONFIG_PARAM
+
+  E4  Text contains "shall provide" or "shall offer":
+        + specific runtime behavior described → FR, sub_type API_CALLBACK
+        + only names an interface            → NFR, sub_type ARCH_CONSTRAINT
+
+  E5  Mode management:
+        named state + named API call present → FR, sub_type STATE_PROCESSING
+        generic capability / no named call   → NFR, sub_type ARCH_CONSTRAINT
+
+  E6  Safety-related:
+        ISO 26262 / ASIL compliance          → NFR, sub_type ARCH_CONSTRAINT
+        specific guarded state transition    → FR, sub_type STATE_PROCESSING
+
+CLASSIFICATION GATES — apply in order if no edge case matched
+-------------------------------------------------------------
+  Gate 1 — Named API or callback in text?
+    Signal: CanIf_*, Can_*, PduR_*, EcuM_*, ComM_* function name;
+            <User>_RxIndication, <User>_TxConfirmation; any name with ()
+    YES → FR, sub_type API_CALLBACK, mappable true
+
+  Gate 2 — State transition or processing logic?
+    Signal: UNINIT, INIT, SLEEP, STARTED, STOPPED, TX_ONLINE, TX_OFFLINE;
+            route, filter, discard, forward, translate, check, multiplex,
+            buffer; "if [state] then [action]"
+    YES → FR, sub_type STATE_PROCESSING, mappable true
+
+  Gate 3 — Configuration variability point?
+    Signal: pre-compile, link time, post-build, configurable,
+            CanIfCtrlCfg, CanIfTxPduCfg, CanIfRxPduCfg, CanIfInitCfg,
+            ECU configuration, ARXML, SWC parameter
+    YES → CR, sub_type CONFIG_PARAM, mappable partial
+
+  Gate 4 — DET or DEM error reporting?
+    Signal: DET, DEM, CANIF_E_UNINIT, CANIF_E_INVALID_PDU_ID,
+            CANIF_E_PARAM_CONTROLLER, Det_ReportError,
+            Dem_ReportErrorStatus, development error, production error
+    YES → FR, sub_type ERROR_HANDLING, mappable true
+
+  Gate 5 — Module-wide architectural constraint?
+    Signal: shall not access hardware, non-reentrant, MISRA-C,
+            BSW naming, independent from, shall not use platform-specific,
+            memory-mapped, shall not call [module] directly
+    YES → NFR, sub_type ARCH_CONSTRAINT, mappable false
+
+  Gate 6 — Timing, performance, or memory constraint?
+    Signal: milliseconds, scheduling period, WCET, RAM usage, ROM footprint,
+            stack depth, shall not exceed X bytes, real-time, execution time
+    YES → NFR, sub_type TIMING_PERF_MEMORY, mappable false
+
+  Default (no gate matched):
+    → FR, sub_type GENERAL_FUNCTIONAL, mappable true
+
+CONFIDENCE RULES
+----------------
+  HIGH   — A gate matched via an unambiguous keyword (named function,
+            exact DET error code, named config container, named state)
+  MEDIUM — Gate matched via general descriptive language (no specific names)
+  LOW    — Text is ambiguous; could fit two gates; human review required
+
+OUTPUT FORMAT
+-------------
+Return ONLY a valid JSON object. No explanation, no markdown, no extra text.
+
+{
+  "req_id":          "<requirement ID>",
+  "classification":  "<FR | NFR | CR>",
+  "sub_type":        "<API_CALLBACK | STATE_PROCESSING | CONFIG_PARAM |
+                       ERROR_HANDLING | ARCH_CONSTRAINT |
+                       TIMING_PERF_MEMORY | GENERAL_FUNCTIONAL | GENERAL_NFR>",
+  "mappable_to_code": <true | false | "partial">,
+  "confidence":      "<HIGH | MEDIUM | LOW>",
+  "gate_matched":    "<Edge Case E1..E6 | Gate 1..6 | Default>",
+  "reasoning":       "<one sentence explaining the classification decision>"
+}
+
+EXAMPLES
+--------
+Input:
+  { "req_id": "SWS_CANIF_00308",
+    "description": "The CAN Interface shall call Can_SetControllerMode() to
+                    request the transition to the requested controller mode." }
+
+Output:
+  {
+    "req_id": "SWS_CANIF_00308",
+    "classification": "FR",
+    "sub_type": "API_CALLBACK",
+    "mappable_to_code": true,
+    "confidence": "HIGH",
+    "gate_matched": "Gate 1",
+    "reasoning": "Named AUTOSAR API Can_SetControllerMode() is explicitly
+                  referenced, indicating a direct function call in code."
+  }
+
+---
+
+Input:
+  { "req_id": "SWS_CANIF_00032",
+    "description": "The CanIf module shall not directly access CAN hardware
+                    registers or any memory-mapped hardware resource." }
+
+Output:
+  {
+    "req_id": "SWS_CANIF_00032",
+    "classification": "NFR",
+    "sub_type": "ARCH_CONSTRAINT",
+    "mappable_to_code": false,
+    "confidence": "HIGH",
+    "gate_matched": "Edge Case E1",
+    "reasoning": "Prohibits direct HW access — a module-wide architectural
+                  design constraint that applies to all functions, not one."
+  }
+
+---
+
+Input:
+  { "req_id": "SWS_CANIF_00661",
+    "description": "The number of CAN Controllers supported by CanIf shall be
+                    configurable at pre-compile time via CanIfCtrlCfg." }
+
+Output:
+  {
+    "req_id": "SWS_CANIF_00661",
+    "classification": "CR",
+    "sub_type": "CONFIG_PARAM",
+    "mappable_to_code": "partial",
+    "confidence": "HIGH",
+    "gate_matched": "Gate 3",
+    "reasoning": "Pre-compile time variability and named config container
+                  CanIfCtrlCfg make this a configuration requirement."
+  }
+````
 
 ---
 
