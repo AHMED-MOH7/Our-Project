@@ -1159,32 +1159,7 @@ cp /tmp/chat_capture.pcap /mnt/c/Users/Hp/chat_capture.pcap
 
 Open `C:\Users\Hp\chat_capture.pcap` in Wireshark on Windows.
 
-#### Wireshark Capture Sequence
 
-```mermaid
-sequenceDiagram
-    participant W as Wireshark on br0
-    participant C as Client 192.168.10.3
-    participant S as Server 192.168.10.2
-
-    Note over W: Filter: tcp port 12345
-
-    C->>S: SYN Seq=0
-    W-->>W: Packet 1 captured
-    S->>C: SYN-ACK Seq=0 Ack=1
-    W-->>W: Packet 2 captured
-    C->>S: ACK Seq=1 Ack=1
-    W-->>W: Packet 3 — 3-way handshake complete
-
-    C->>S: PSH ACK — "Hello from chat-client on QEMU!\n"
-    W-->>W: Packet 4 — message payload visible in hex view
-    S->>C: ACK
-    W-->>W: Packet 5 captured
-
-    C->>S: FIN ACK
-    S->>C: FIN ACK
-    W-->>W: Connection teardown captured
-```
 
 ---
 
