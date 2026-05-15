@@ -1192,25 +1192,6 @@ sequenceDiagram
 
 This project delivered a complete end-to-end embedded Linux solution built entirely with the Yocto Project. Starting from cloning the Poky reference distribution, through writing custom BitBake recipes and image definitions, to deploying two separate root filesystems on QEMU and proving TCP communication between them — every stage of the embedded Linux development lifecycle was covered.
 
-### Summary of Results
-
-| Requirement | Status | Evidence |
-|---|---|---|
-| Yocto environment configured | Done | `poky` Kirkstone cloned and initialized |
-| Target machine selected | Done | `MACHINE = qemux86-64` in `local.conf` |
-| meta-raspberrypi layer added | Done | Layer present in `bblayers.conf` |
-| meta-qt5 layer added | Done | Layer present in `bblayers.conf` |
-| Qt5 server application | Done | `server.cpp` using `QTcpServer` on port 12345 |
-| Qt5 client application | Done | `client.cpp` using `QTcpSocket`, auto-connects |
-| TCP socket communication | Done | Messages exchanged over `192.168.10.0/24` |
-| Custom `meta-chat` layer created | Done | Full layer with `layer.conf`, recipes, and images |
-| Layer interfaced to Yocto | Done | Confirmed with `bitbake-layers show-layers` |
-| Client added to custom layer | Done | `chat-client_1.0.bb` + `chat-client-image.bb` |
-| Client image built and deployed | Done | `chat-client-image-qemux86-64.ext4` on QEMU |
-| Server image built and deployed | Done | `chat-server-image-qemux86-64.ext4` on QEMU |
-| Two instances connected | Done | Linux bridge `br0` with `tap0` and `tap1` |
-| **BONUS** Server auto-starts on boot | **Done** | systemd unit with pre-created enable symlink in `do_install` |
-| **BONUS** Wireshark traffic capture | **Done** | tshark on `br0`, `.pcap` analyzed in Wireshark |
 
 ### Key Technical Lessons
 
