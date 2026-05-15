@@ -1,17 +1,6 @@
 # CSE412 — Embedded Systems: Project 2
 ## Qt5 TCP Chat Application on Yocto Linux
 
----
-
-| | |
-|---|---|
-| **Course** | CSE412 — Embedded Systems |
-| **University** | Faculty of Engineering, Ain Shams University |
-| **Student** | Ahmed Mohamed |
-| **GitHub** | AHMED-MOH7 |
-| **Submission Date** | April 2026 |
-
----
 
 ## Table of Contents
 
